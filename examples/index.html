@@ -166,6 +166,22 @@
         </div>
 
         <div class="demo-section">
+            <h2>接管原生弹窗（intercept）</h2>
+            <p style="color:#666; margin-bottom:12px; font-size:14px;">
+                点击「接管」后，调用 <code>window.alert/confirm/prompt</code> 将由 JCuPupw 渲染。
+                接管后 confirm/prompt 返回 <strong>Promise</strong>，需用 <code>await</code> 接收结果。
+            </p>
+            <div class="demo-grid">
+                <button class="demo-btn demo-btn--primary" id="btn-intercept">JCuPupw.intercept() 接管</button>
+                <button class="demo-btn" id="btn-restore">restore() 恢复原生</button>
+                <button class="demo-btn" id="btn-native-alert">window.alert()</button>
+                <button class="demo-btn" id="btn-native-confirm">window.confirm()</button>
+                <button class="demo-btn" id="btn-native-prompt">window.prompt()</button>
+            </div>
+            <div class="result-box" id="result-native">原生调用结果会显示在这里…</div>
+        </div>
+
+        <div class="demo-section">
             <h2>触发器模式</h2>
             <p style="color:#666; margin-bottom:12px; font-size:14px;">
                 给按钮添加 <code>.jc-modal-trigger</code> 类和 <code>data-modal-*</code> 属性即可自动绑定：
