@@ -191,6 +191,7 @@ class JCuPupw {
                 this.container.style.top = '';
                 this.container.style.margin = '';
                 this.container.style.transform = '';
+                this._dragOffset = { x: 0, y: 0 };
                 if (!JCuPupw._hasOpenModal()) {
                     document.body.style.overflow = '';
                 }
@@ -225,7 +226,7 @@ class JCuPupw {
 
     _initDrag(draggable) {
         if (this._dragHandler) {
-            this.modalTitle.removeEventListener('mousedown', this._dragHandler);
+            this.modalTitle.removeEventListener('pointerdown', this._dragHandler);
             this._dragHandler = null;
         }
         this.modalTitle.classList.remove('jc-modal__title--draggable');
@@ -233,35 +234,32 @@ class JCuPupw {
 
         this.modalTitle.classList.add('jc-modal__title--draggable');
         this._dragHandler = (e) => this._startDrag(e);
-        this.modalTitle.addEventListener('mousedown', this._dragHandler);
+        this.modalTitle.addEventListener('pointerdown', this._dragHandler);
     }
 
     _startDrag(e) {
         e.preventDefault();
-        const rect = this.container.getBoundingClientRect();
+        this._dragOffset = this._dragOffset || { x: 0, y: 0 };
         const startX = e.clientX;
         const startY = e.clientY;
-        const startLeft = rect.left;
-        const startTop = rect.top;
+        const origin = { x: this._dragOffset.x, y: this._dragOffset.y };
 
-        this.container.style.margin = '0';
-        this.container.style.left = `${startLeft}px`;
-        this.container.style.top = `${startTop}px`;
+        this.container.style.willChange = 'transform';
         document.body.style.userSelect = 'none';
 
         const onMove = (ev) => {
-            const dx = ev.clientX - startX;
-            const dy = ev.clientY - startY;
-            this.container.style.left = `${startLeft + dx}px`;
-            this.container.style.top = `${startTop + dy}px`;
+            this._dragOffset.x = origin.x + (ev.clientX - startX);
+            this._dragOffset.y = origin.y + (ev.clientY - startY);
+            this.container.style.transform = `translate(${this._dragOffset.x}px, ${this._dragOffset.y}px)`;
         };
         const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
             document.body.style.userSelect = '';
+            this.container.style.willChange = '';
         };
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
     }
 
     setTitle(title) { this.modalTitle.textContent = title; return this; }
