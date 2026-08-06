@@ -434,6 +434,31 @@
             JCuPupw.closeAll();
         });
 
+        /* ===== 接管原生弹窗 ===== */
+        $('btn-intercept').addEventListener('click', () => {
+            JCuPupw.intercept();
+            setResult('result-native', '已接管 window.alert / confirm / prompt（confirm/prompt 现返回 Promise）');
+        });
+
+        $('btn-restore').addEventListener('click', () => {
+            JCuPupw.restore();
+            setResult('result-native', '已恢复原生 window.alert / confirm / prompt');
+        });
+
+        $('btn-native-alert').addEventListener('click', () => {
+            window.alert('这是被接管的 window.alert() —— 由 JCuPupw 渲染');
+        });
+
+        $('btn-native-confirm').addEventListener('click', async () => {
+            const ok = await window.confirm('这是被接管的 window.confirm() —— 返回 Promise');
+            setResult('result-native', `window.confirm() 返回: ${ok}`);
+        });
+
+        $('btn-native-prompt').addEventListener('click', async () => {
+            const value = await window.prompt('请输入内容（被接管的 window.prompt）:', '默认值');
+            setResult('result-native', `window.prompt() 返回: ${value === null ? 'null（已取消）' : `"${value}"`}`);
+        });
+
         console.log('JCuPupw 已加载，静态方法：', {
             alert: typeof JCuPupw.alert,
             confirm: typeof JCuPupw.confirm,
