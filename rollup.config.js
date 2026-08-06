@@ -19,7 +19,7 @@ export default {
             format: 'es'
         },
         {
-            file: 'dist/jcupupw.cjs.js',
+            file: 'dist/jcupupw.cjs',
             format: 'cjs',
             exports: 'default'
         }

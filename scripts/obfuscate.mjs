@@ -11,7 +11,7 @@ const distDir = path.join(__dirname, '..', 'dist');
 const targets = [
     'jcupupw.umd.js',
     'jcupupw.esm.js',
-    'jcupupw.cjs.js'
+    'jcupupw.cjs'
 ];
 
 const options = {
