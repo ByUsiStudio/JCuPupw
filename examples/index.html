@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JCuPupw 弹窗库演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fffde7 0%, #e3f2fd 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #3f51b5;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .demo-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(63, 81, 181, 0.08);
+        }
+        .demo-section h2 {
+            color: #3f51b5;
+            margin-bottom: 16px;
+            font-size: 18px;
+            border-left: 4px solid #3f51b5;
+            padding-left: 10px;
+        }
+        .demo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .demo-btn {
+            padding: 10px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .demo-btn:hover {
+            border-color: #3f51b5;
+            color: #3f51b5;
+        }
+        .demo-btn--primary {
+            background: #3f51b5;
+            border-color: #3f51b5;
+            color: #fff;
+        }
+        .demo-btn--primary:hover {
+            background: #303f9f;
+            color: #fff;
+        }
+        .demo-btn--danger {
+            background: #ff4444;
+            border-color: #ff4444;
+            color: #fff;
+        }
+        .demo-btn--danger:hover {
+            background: #cc0000;
+            color: #fff;
+        }
+        code {
+            background: #fffde7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #3f51b5;
+        }
+        .code-block {
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #333;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JCuPupw 弹窗库演示</h1>
+        <p class="subtitle">轻量级浏览器弹窗库 — 支持自动注入 DOM 和样式</p>
+
+        <div class="demo-section">
+            <h2>基础用法</h2>
+            <div class="demo-grid">
+                <button class="demo-btn demo-btn--primary" id="btn-basic">基本弹窗</button>
+                <button class="demo-btn" id="btn-confirm">确认弹窗</button>
+                <button class="demo-btn demo-btn--danger" id="btn-danger">危险操作</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>进阶用法</h2>
+            <div class="demo-grid">
+                <button class="demo-btn" id="btn-loading">Loading 状态</button>
+                <button class="demo-btn" id="btn-html-content">HTML 内容</button>
+                <button class="demo-btn" id="btn-multi-buttons">多按钮弹窗</button>
+                <button class="demo-btn" id="btn-event">事件监听</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>触发器模式</h2>
+            <p style="color:#666; margin-bottom:12px; font-size:14px;">
+                给按钮添加 <code>.jc-modal-trigger</code> 类和 <code>data-modal-*</code> 属性即可自动绑定：
+            </p>
+            <div class="demo-grid">
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-title="触发器标题"
+                        data-modal-content="这是通过 data 属性触发的弹窗内容，无需手动编写 JS。"
+                        data-modal-buttons='[{"text":"知道了","type":"primary"}]'>
+                    触发器按钮
+                </button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>代码示例</h2>
+            <div class="code-block">
+// 引入库
+const JCuPupw = require('jcupupw');           // CommonJS
+import JCuPupw from 'jcupupw';               // ES Module
+// 浏览器: <script src="dist/jcupupw.umd.js">
+
+const modal = new JCuPupw();
+
+// 打开弹窗
+modal.open({
+    title: '提示',
+    content: '这是弹窗内容',
+    buttons: [
+        { text: '取消', action: () => console.log('取消'), type: 'default' },
+        { text: '确定', type: 'primary', action: () => console.log('确定') }
+    ],
+    onOpen: () => console.log('打开了'),
+    onClose: () => console.log('关闭了')
+});
+
+// 事件监听
+modal.on('open', () => console.log('open 事件'));
+modal.on('close', () => console.log('close 事件'));
+
+// Loading
+modal.showLoading();
+setTimeout(() => modal.hideLoading(), 2000);
+            </div>
+        </div>
+    </div>
+
+    <script src="../dist/jcupupw.umd.js"></script>
+    <script>
+        const modal = new JCuPupw();
+
+        document.getElementById('btn-basic').addEventListener('click', () => {
+            modal.open({
+                title: '提示',
+                content: '这是一个基础弹窗，点击遮罩或关闭按钮或按 ESC 均可关闭。'
+            });
+        });
+
+        document.getElementById('btn-confirm').addEventListener('click', () => {
+            modal.open({
+                title: '确认操作',
+                content: '确定要执行此操作吗？',
+                buttons: [
+                    { text: '取消', type: 'default', action: () => console.log('用户点击取消') },
+                    { text: '确定', type: 'primary', action: () => console.log('用户点击确定') }
+                ]
+            });
+        });
+
+        document.getElementById('btn-danger').addEventListener('click', () => {
+            modal.open({
+                title: '删除确认',
+                content: '<p>此操作将 <strong>永久删除</strong> 所有数据，且无法恢复！</p>',
+                buttons: [
+                    { text: '取消', type: 'default' },
+                    { text: '确认删除', type: 'danger', action: () => console.log('已删除') }
+                ]
+            });
+        });
+
+        document.getElementById('btn-loading').addEventListener('click', () => {
+            modal.open({
+                title: '加载中',
+                content: '正在处理，请稍候...',
+                buttons: []
+            });
+            modal.showLoading();
+            setTimeout(() => {
+                modal.hideLoading();
+                modal.close();
+            }, 2000);
+        });
+
+        document.getElementById('btn-html-content').addEventListener('click', () => {
+            modal.open({
+                title: '富文本内容',
+                content: `
+                    <div style="line-height:1.8;">
+                        <h3 style="color:#3f51b5; margin-bottom:8px;">支持 HTML 内容</h3>
+                        <p>可以包含 <strong>粗体</strong>、<em>斜体</em>、<a href="#" onclick="return false;">链接</a> 等</p>
+                        <ul style="padding-left:20px; color:#555;">
+                            <li>列表项一</li>
+                            <li>列表项二</li>
+                            <li>列表项三</li>
+                        </ul>
+                    </div>
+                `
+            });
+        });
+
+        document.getElementById('btn-multi-buttons').addEventListener('click', () => {
+            modal.open({
+                title: '选择操作',
+                content: '请选择一个操作：',
+                buttons: [
+                    { text: '关闭', type: 'default' },
+                    { text: '保存', type: 'default', action: () => console.log('保存') },
+                    { text: '发布', type: 'primary', action: () => console.log('发布') },
+                    { text: '删除', type: 'danger', action: () => console.log('删除') }
+                ]
+            });
+        });
+
+        document.getElementById('btn-event').addEventListener('click', () => {
+            const eventModal = new JCuPupw({ id: 'eventModal' });
+            eventModal.on('open', () => console.log('[事件] 弹窗打开'));
+            eventModal.on('close', () => console.log('[事件] 弹窗关闭'));
+            eventModal.open({
+                title: '事件监听演示',
+                content: '打开浏览器控制台查看事件触发日志。',
+                buttons: [{ text: '关闭', type: 'default' }]
+            });
+        });
+    </script>
+</body>
+</html>
