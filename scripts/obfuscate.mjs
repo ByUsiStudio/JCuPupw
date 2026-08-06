@@ -1,12 +1,15 @@
 import pkg from 'javascript-obfuscator';
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 
 const { obfuscate } = pkg;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const distDir = path.join(__dirname, '..', 'dist');
+const rootDir = path.join(__dirname, '..');
+const distDir = path.join(rootDir, 'dist');
+const pkgInfo = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
 
 const targets = [
     'jcupupw.umd.js',
@@ -28,6 +31,24 @@ const options = {
     splitStrings: false
 };
 
+const buildDate = new Date().toISOString().slice(0, 10);
+const buildId = randomUUID();
+const banner = `/*!
+ * JCuPupw v${pkgInfo.version}
+ * ${pkgInfo.description}
+ *
+ * Repository:
+ *   - https://gitee.com/byusistudio/jcupupw
+ *   - https://github.com/ByUsiStudio/JCuPupw
+ *   - https://codeberg.org/ByUsiStudio/JCuPupw
+ *
+ * Author: 北啊呢 <177828525@qq.com> (ByUsiStudio)
+ * License: AGPL-3.0-or-later
+ * Build: ${buildDate}
+ * Build ID: ${buildId}
+ */
+`;
+
 for (const file of targets) {
     const filePath = path.join(distDir, file);
     if (!fs.existsSync(filePath)) {
@@ -36,7 +57,7 @@ for (const file of targets) {
     }
     const code = fs.readFileSync(filePath, 'utf8');
     const result = obfuscate(code, options);
-    fs.writeFileSync(filePath, result.getObfuscatedCode(), 'utf8');
+    fs.writeFileSync(filePath, banner + result.getObfuscatedCode(), 'utf8');
     console.log(`[obfuscated] ${file}`);
 }
 

@@ -14,8 +14,16 @@
     "popup",
     "jcupupw"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "北啊呢 <177828525@qq.com> (https://github.com/ByUsiStudio)",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://github.com/ByUsiStudio/JCuPupw",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ByUsiStudio/JCuPupw.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ByUsiStudio/JCuPupw/issues"
+  },
   "type": "module",
   "devDependencies": {
     "javascript-obfuscator": "^5.5.0",
