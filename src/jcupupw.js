@@ -393,20 +393,39 @@ class JCuPupw {
     static intercept() {
         if (JCuPupw._intercepted) return JCuPupw._restore;
 
-        const _alert = window.alert;
-        const _confirm = window.confirm;
-        const _prompt = window.prompt;
-
-        window.alert = (message) => JCuPupw.alert({ content: String(message) });
-        window.confirm = (message) => JCuPupw.confirm({ content: String(message) });
-        window.prompt = (message, defaultValue) =>
-            JCuPupw.prompt({ content: String(message), defaultValue: defaultValue ?? '' });
+        window.alert = (message) => {
+            try {
+                return JCuPupw.alert({ content: String(message) });
+            } catch (e) {
+                console.error('[JCuPupw] intercepted alert failed:', e);
+                // 出错时返回 undefined，避免降级到原生方法导致浏览器阻塞
+                return undefined;
+            }
+        };
+        window.confirm = (message) => {
+            try {
+                return JCuPupw.confirm({ content: String(message) });
+            } catch (e) {
+                console.error('[JCuPupw] intercepted confirm failed:', e);
+                // 出错时返回 false，避免降级到原生方法导致浏览器阻塞
+                return false;
+            }
+        };
+        window.prompt = (message, defaultValue) => {
+            try {
+                return JCuPupw.prompt({ content: String(message), defaultValue: defaultValue ?? '' });
+            } catch (e) {
+                console.error('[JCuPupw] intercepted prompt failed:', e);
+                // 出错时返回 null，避免降级到原生方法导致浏览器阻塞
+                return null;
+            }
+        };
 
         JCuPupw._intercepted = true;
         JCuPupw._restore = () => {
-            window.alert = _alert;
-            window.confirm = _confirm;
-            window.prompt = _prompt;
+            delete window.alert;
+            delete window.confirm;
+            delete window.prompt;
             JCuPupw._intercepted = false;
             JCuPupw._restore = null;
         };
@@ -414,7 +433,11 @@ class JCuPupw {
     }
 
     static restore() {
-        if (typeof JCuPupw._restore === 'function') JCuPupw._restore();
+        if (typeof JCuPupw._restore === 'function') {
+            JCuPupw._restore();
+        } else {
+            console.warn('[JCuPupw] restore() called but not intercepted.');
+        }
     }
 
     static _showToast(content, type, duration) {
