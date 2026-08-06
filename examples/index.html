@@ -387,16 +387,31 @@
         });
 
         /* ===== 多弹窗管理 ===== */
+        // 预创建独立实例用于堆叠/队列演示（同实例 open 会覆盖，堆叠需独立实例）
+        const stackModals = ['s1', 's2', 's3'].map(id => new JCuPupw({ id }));
+        const queueModals = ['q1', 'q2', 'q3'].map(id => new JCuPupw({ id }));
+
         $('btn-stack').addEventListener('click', () => {
-            modal.open({ title: '堆叠 1', content: '这是第一个弹窗（默认堆叠模式，z-index 自动递增）。' });
-            setTimeout(() => modal.open({ title: '堆叠 2', content: '第二个弹窗叠加在上方。', size: 'sm' }), 300);
-            setTimeout(() => modal.open({ title: '堆叠 3', content: '第三个弹窗，按 ESC 只关最顶层。', size: 'sm' }), 600);
+            JCuPupw.closeAll();
+            stackModals.forEach((m, i) => {
+                setTimeout(() => m.open({
+                    title: `堆叠 ${i + 1}`,
+                    content: `第 ${i + 1} 个弹窗，z-index 自动递增。按 ESC 只关最顶层。`,
+                    size: 'sm'
+                }), i * 300);
+            });
         });
 
         $('btn-queue').addEventListener('click', () => {
-            modal.open({ title: '队列 1', content: '队列模式：关闭后自动显示下一个。', queue: true, size: 'sm' });
-            setTimeout(() => modal.open({ title: '队列 2', content: '我在排队等待显示。', queue: true, size: 'sm' }), 300);
-            setTimeout(() => modal.open({ title: '队列 3', content: '我也在排队。', queue: true, size: 'sm' }), 600);
+            JCuPupw.closeAll();
+            queueModals.forEach((m, i) => {
+                setTimeout(() => m.open({
+                    title: `队列 ${i + 1}`,
+                    content: `第 ${i + 1} 个，关闭后自动显示下一个。`,
+                    queue: true,
+                    size: 'sm'
+                }), i * 300);
+            });
         });
 
         $('btn-close-all').addEventListener('click', () => {
