@@ -390,6 +390,33 @@ class JCuPupw {
 
     static instance() { return JCuPupw._getSingleton(); }
 
+    static intercept() {
+        if (JCuPupw._intercepted) return JCuPupw._restore;
+
+        const _alert = window.alert;
+        const _confirm = window.confirm;
+        const _prompt = window.prompt;
+
+        window.alert = (message) => JCuPupw.alert({ content: String(message) });
+        window.confirm = (message) => JCuPupw.confirm({ content: String(message) });
+        window.prompt = (message, defaultValue) =>
+            JCuPupw.prompt({ content: String(message), defaultValue: defaultValue ?? '' });
+
+        JCuPupw._intercepted = true;
+        JCuPupw._restore = () => {
+            window.alert = _alert;
+            window.confirm = _confirm;
+            window.prompt = _prompt;
+            JCuPupw._intercepted = false;
+            JCuPupw._restore = null;
+        };
+        return JCuPupw._restore;
+    }
+
+    static restore() {
+        if (typeof JCuPupw._restore === 'function') JCuPupw._restore();
+    }
+
     static _showToast(content, type, duration) {
         const container = JCuPupw._getToastContainer();
         const toast = document.createElement('div');
