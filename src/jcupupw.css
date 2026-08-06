@@ -1,4 +1,3 @@
-/* 基础样式 */
 :root {
     --jc-primary: #3f51b5;
     --jc-primary-hover: #303f9f;
@@ -28,7 +27,6 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-/* 弹窗容器 */
 .jc-modal {
     display: none;
     position: fixed;
@@ -39,7 +37,6 @@
     z-index: 1000;
 }
 
-/* 遮罩层 */
 .jc-modal__overlay {
     position: absolute;
     top: 0;
@@ -52,7 +49,6 @@
     transition: opacity 0.3s ease;
 }
 
-/* 弹窗内容容器 */
 .jc-modal__container {
     position: relative;
     background: var(--jc-background);
@@ -67,7 +63,6 @@
     transition: var(--jc-transition);
 }
 
-/* 弹窗激活状态 */
 .jc-modal--active {
     display: block;
 }
@@ -80,7 +75,6 @@
     animation: jc-fadeInUp 0.5s ease-out forwards;
 }
 
-/* 弹窗关闭动画 */
 .jc-modal--closing .jc-modal__overlay {
     opacity: 0;
     transition: opacity 0.5s ease;
@@ -90,7 +84,6 @@
     animation: jc-fadeOutDown 0.5s ease-out forwards;
 }
 
-/* 弹窗标题 */
 .jc-modal__title {
     margin: 0 0 16px;
     font-size: 24px;
@@ -99,7 +92,6 @@
     padding-right: 40px;
 }
 
-/* 弹窗内容 */
 .jc-modal__content {
     margin: 16px 0;
     font-size: 16px;
@@ -107,7 +99,6 @@
     color: var(--jc-text-light);
 }
 
-/* 弹窗按钮区域 */
 .jc-modal__actions {
     display: flex;
     justify-content: flex-end;
@@ -116,7 +107,6 @@
     flex-wrap: wrap;
 }
 
-/* 弹窗按钮 */
 .jc-modal__button {
     background: var(--jc-primary);
     color: #fff;
@@ -140,7 +130,6 @@
     transform: translateY(0);
 }
 
-/* 默认按钮样式（非主要操作） */
 .jc-modal__button--default {
     background: var(--jc-background);
     color: var(--jc-text);
@@ -152,7 +141,6 @@
     color: var(--jc-text);
 }
 
-/* 主要按钮样式 */
 .jc-modal__button--primary {
     background: var(--jc-primary);
     color: #fff;
@@ -163,7 +151,6 @@
     background: var(--jc-primary-hover);
 }
 
-/* 危险按钮样式 */
 .jc-modal__button--danger {
     background: var(--jc-danger);
 }
@@ -172,7 +159,6 @@
     background: var(--jc-danger-hover);
 }
 
-/* 关闭按钮 */
 .jc-modal__close {
     position: absolute;
     top: 16px;
@@ -192,7 +178,6 @@
     color: var(--jc-text);
 }
 
-/* 加载状态 */
 .jc-modal__loading {
     display: none;
     position: absolute;
@@ -225,7 +210,6 @@
     100% { transform: rotate(360deg); }
 }
 
-/* 弹出动画 */
 @keyframes jc-fadeInUp {
     0% {
         opacity: 0;
@@ -237,7 +221,6 @@
     }
 }
 
-/* 关闭动画 */
 @keyframes jc-fadeOutDown {
     0% {
         opacity: 1;
@@ -249,7 +232,6 @@
     }
 }
 
-/* 移动端优化 */
 @media (max-width: 480px) {
     .jc-modal__container {
         margin: 10vh auto;
@@ -267,4 +249,112 @@
     .jc-modal__button {
         padding: 10px 20px;
     }
+}
+
+.jc-modal__container--sm {
+    max-width: 320px;
+}
+
+.jc-modal__container--md {
+    max-width: 500px;
+}
+
+.jc-modal__container--lg {
+    max-width: 800px;
+}
+
+.jc-modal__container--auto {
+    max-width: 90%;
+}
+
+.jc-modal__title--draggable {
+    cursor: move;
+    user-select: none;
+}
+
+.jc-modal[data-theme="light"] {
+    --jc-text: #333;
+    --jc-text-light: #666;
+    --jc-background: #fff;
+    --jc-border: #e0e0e0;
+    --jc-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.jc-modal[data-theme="dark"] {
+    --jc-text: #fff;
+    --jc-text-light: #ccc;
+    --jc-background: #1e1e1e;
+    --jc-border: #444;
+    --jc-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.jc-modal__input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--jc-border);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--jc-text);
+    background: var(--jc-background);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.jc-modal__input:focus {
+    outline: none;
+    border-color: var(--jc-primary);
+}
+
+.jc-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.jc-toast {
+    min-width: 200px;
+    max-width: 320px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: var(--jc-background, #fff);
+    color: var(--jc-text, #333);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid var(--jc-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: auto;
+}
+
+.jc-toast--visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.jc-toast--leaving {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.jc-toast--success {
+    border-left-color: #4caf50;
+}
+
+.jc-toast--error {
+    border-left-color: var(--jc-danger);
+}
+
+.jc-toast--warning {
+    border-left-color: #ff9800;
+}
+
+.jc-toast--info {
+    border-left-color: var(--jc-primary);
 }

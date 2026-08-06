@@ -84,22 +84,22 @@
             font-size: 13px;
             color: #3f51b5;
         }
-        .code-block {
+        .result-box {
+            margin-top: 14px;
+            padding: 10px 14px;
             background: #f5f5f5;
             border-radius: 6px;
-            padding: 16px;
-            margin-top: 12px;
-            font-family: 'Courier New', monospace;
             font-size: 13px;
             color: #333;
-            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            min-height: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>JCuPupw 弹窗库演示</h1>
-        <p class="subtitle">轻量级浏览器弹窗库 — 支持自动注入 DOM 和样式</p>
+        <p class="subtitle">轻量级浏览器弹窗库 — 支持自动注入 DOM 和样式 · 快捷方法 · 拖拽 · 主题 · 多弹窗</p>
 
         <div class="demo-section">
             <h2>基础用法</h2>
@@ -121,6 +121,51 @@
         </div>
 
         <div class="demo-section">
+            <h2>快捷对话框方法（静态调用）</h2>
+            <div class="demo-grid">
+                <button class="demo-btn demo-btn--primary" id="btn-alert">JCuPupw.alert()</button>
+                <button class="demo-btn" id="btn-confirm-static">JCuPupw.confirm()</button>
+                <button class="demo-btn" id="btn-prompt-static">JCuPupw.prompt()</button>
+                <button class="demo-btn" id="btn-toast-success">toast success</button>
+                <button class="demo-btn" id="btn-toast-error">toast error</button>
+                <button class="demo-btn" id="btn-toast-warning">toast warning</button>
+            </div>
+            <div class="result-box" id="result-quick">返回值会显示在这里…</div>
+        </div>
+
+        <div class="demo-section">
+            <h2>拖拽与尺寸控制</h2>
+            <div class="demo-grid">
+                <button class="demo-btn demo-btn--primary" id="btn-drag">可拖拽弹窗</button>
+                <button class="demo-btn" id="btn-size-sm">小尺寸 sm</button>
+                <button class="demo-btn" id="btn-size-md">中尺寸 md</button>
+                <button class="demo-btn" id="btn-size-lg">大尺寸 lg</button>
+                <button class="demo-btn" id="btn-width-custom">自定义宽度 600px</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>行为开关与钩子</h2>
+            <div class="demo-grid">
+                <button class="demo-btn" id="btn-no-overlay">禁用遮罩关闭</button>
+                <button class="demo-btn" id="btn-no-esc">禁用 ESC 关闭</button>
+                <button class="demo-btn demo-btn--danger" id="btn-before-close">beforeClose 拦截</button>
+                <button class="demo-btn demo-btn--primary" id="btn-auto-close">3 秒自动关闭</button>
+                <button class="demo-btn" id="btn-theme-dark">暗色主题</button>
+                <button class="demo-btn" id="btn-theme-light">亮色主题</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>多弹窗管理</h2>
+            <div class="demo-grid">
+                <button class="demo-btn demo-btn--primary" id="btn-stack">堆叠打开 3 个</button>
+                <button class="demo-btn" id="btn-queue">队列模式 3 个</button>
+                <button class="demo-btn demo-btn--danger" id="btn-close-all">closeAll() 批量关闭</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
             <h2>触发器模式</h2>
             <p style="color:#666; margin-bottom:12px; font-size:14px;">
                 给按钮添加 <code>.jc-modal-trigger</code> 类和 <code>data-modal-*</code> 属性即可自动绑定：
@@ -129,57 +174,36 @@
                 <button class="demo-btn jc-modal-trigger"
                         data-modal-title="触发器标题"
                         data-modal-content="这是通过 data 属性触发的弹窗内容，无需手动编写 JS。"
+                        data-modal-size="sm"
                         data-modal-buttons='[{"text":"知道了","type":"primary"}]'>
-                    触发器按钮
+                    触发器按钮（小尺寸）
                 </button>
-            </div>
-        </div>
-
-        <div class="demo-section">
-            <h2>代码示例</h2>
-            <div class="code-block">
-// 引入库
-const JCuPupw = require('jcupupw');           // CommonJS
-import JCuPupw from 'jcupupw';               // ES Module
-// 浏览器: <script src="dist/jcupupw.umd.js">
-
-const modal = new JCuPupw();
-
-// 打开弹窗
-modal.open({
-    title: '提示',
-    content: '这是弹窗内容',
-    buttons: [
-        { text: '取消', action: () => console.log('取消'), type: 'default' },
-        { text: '确定', type: 'primary', action: () => console.log('确定') }
-    ],
-    onOpen: () => console.log('打开了'),
-    onClose: () => console.log('关闭了')
-});
-
-// 事件监听
-modal.on('open', () => console.log('open 事件'));
-modal.on('close', () => console.log('close 事件'));
-
-// Loading
-modal.showLoading();
-setTimeout(() => modal.hideLoading(), 2000);
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-title="可拖拽触发器"
+                        data-modal-content="按住标题栏可拖动此弹窗。"
+                        data-modal-draggable="true"
+                        data-modal-buttons='[{"text":"关闭","type":"default"}]'>
+                    触发器按钮（可拖拽）
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="../dist/jcupupw.umd.js"></script>
+    <script src="/dist/jcupupw.umd.js"></script>
     <script>
         const modal = new JCuPupw();
+        const $ = (id) => document.getElementById(id);
+        const setResult = (id, text) => { $(id).textContent = text; };
 
-        document.getElementById('btn-basic').addEventListener('click', () => {
+        /* ===== 基础用法 ===== */
+        $('btn-basic').addEventListener('click', () => {
             modal.open({
                 title: '提示',
                 content: '这是一个基础弹窗，点击遮罩或关闭按钮或按 ESC 均可关闭。'
             });
         });
 
-        document.getElementById('btn-confirm').addEventListener('click', () => {
+        $('btn-confirm').addEventListener('click', () => {
             modal.open({
                 title: '确认操作',
                 content: '确定要执行此操作吗？',
@@ -190,7 +214,7 @@ setTimeout(() => modal.hideLoading(), 2000);
             });
         });
 
-        document.getElementById('btn-danger').addEventListener('click', () => {
+        $('btn-danger').addEventListener('click', () => {
             modal.open({
                 title: '删除确认',
                 content: '<p>此操作将 <strong>永久删除</strong> 所有数据，且无法恢复！</p>',
@@ -201,7 +225,8 @@ setTimeout(() => modal.hideLoading(), 2000);
             });
         });
 
-        document.getElementById('btn-loading').addEventListener('click', () => {
+        /* ===== 进阶用法 ===== */
+        $('btn-loading').addEventListener('click', () => {
             modal.open({
                 title: '加载中',
                 content: '正在处理，请稍候...',
@@ -214,7 +239,7 @@ setTimeout(() => modal.hideLoading(), 2000);
             }, 2000);
         });
 
-        document.getElementById('btn-html-content').addEventListener('click', () => {
+        $('btn-html-content').addEventListener('click', () => {
             modal.open({
                 title: '富文本内容',
                 content: `
@@ -231,7 +256,7 @@ setTimeout(() => modal.hideLoading(), 2000);
             });
         });
 
-        document.getElementById('btn-multi-buttons').addEventListener('click', () => {
+        $('btn-multi-buttons').addEventListener('click', () => {
             modal.open({
                 title: '选择操作',
                 content: '请选择一个操作：',
@@ -244,7 +269,7 @@ setTimeout(() => modal.hideLoading(), 2000);
             });
         });
 
-        document.getElementById('btn-event').addEventListener('click', () => {
+        $('btn-event').addEventListener('click', () => {
             const eventModal = new JCuPupw({ id: 'eventModal' });
             eventModal.on('open', () => console.log('[事件] 弹窗打开'));
             eventModal.on('close', () => console.log('[事件] 弹窗关闭'));
@@ -253,6 +278,138 @@ setTimeout(() => modal.hideLoading(), 2000);
                 content: '打开浏览器控制台查看事件触发日志。',
                 buttons: [{ text: '关闭', type: 'default' }]
             });
+        });
+
+        /* ===== 快捷对话框方法 ===== */
+        $('btn-alert').addEventListener('click', async () => {
+            await JCuPupw.alert({ title: '提示', content: '这是一个 alert 对话框。' });
+            setResult('result-quick', 'alert() 已关闭（resolved）');
+        });
+
+        $('btn-confirm-static').addEventListener('click', async () => {
+            const ok = await JCuPupw.confirm({ title: '请确认', content: '你确定要继续吗？' });
+            setResult('result-quick', `confirm() 返回: ${ok}`);
+        });
+
+        $('btn-prompt-static').addEventListener('click', async () => {
+            const value = await JCuPupw.prompt({
+                title: '请输入昵称',
+                content: '昵称将公开展示：',
+                placeholder: '请输入...',
+                defaultValue: '游客'
+            });
+            setResult('result-quick', `prompt() 返回: ${value === null ? 'null（已取消）' : `"${value}"`}`);
+        });
+
+        $('btn-toast-success').addEventListener('click', () => {
+            JCuPupw.toast({ content: '操作成功！', type: 'success', duration: 2500 });
+        });
+        $('btn-toast-error').addEventListener('click', () => {
+            JCuPupw.toast({ content: '操作失败，请重试。', type: 'error', duration: 2500 });
+        });
+        $('btn-toast-warning').addEventListener('click', () => {
+            JCuPupw.toast({ content: '这是一条警告提示。', type: 'warning', duration: 2500 });
+        });
+
+        /* ===== 拖拽与尺寸 ===== */
+        $('btn-drag').addEventListener('click', () => {
+            modal.open({
+                title: '可拖拽弹窗',
+                content: '按住标题栏（“可拖拽弹窗”）即可在屏幕上拖动此窗口。',
+                draggable: true,
+                buttons: [{ text: '关闭', type: 'default' }]
+            });
+        });
+
+        $('btn-size-sm').addEventListener('click', () => {
+            modal.open({ title: '小尺寸', content: 'size: sm（max-width 320px）', size: 'sm' });
+        });
+        $('btn-size-md').addEventListener('click', () => {
+            modal.open({ title: '中尺寸', content: 'size: md（max-width 500px，默认）', size: 'md' });
+        });
+        $('btn-size-lg').addEventListener('click', () => {
+            modal.open({ title: '大尺寸', content: 'size: lg（max-width 800px）', size: 'lg' });
+        });
+        $('btn-width-custom').addEventListener('click', () => {
+            modal.open({ title: '自定义宽度', content: 'width: 600px（数值自动转 px）', width: 600 });
+        });
+
+        /* ===== 行为开关与钩子 ===== */
+        $('btn-no-overlay').addEventListener('click', () => {
+            modal.open({
+                title: '禁用遮罩关闭',
+                content: '点击遮罩层不会关闭此弹窗，只能用关闭按钮或 ESC。',
+                closeOnOverlay: false
+            });
+        });
+
+        $('btn-no-esc').addEventListener('click', () => {
+            modal.open({
+                title: '禁用 ESC 关闭',
+                content: '按 ESC 键不会关闭此弹窗，只能点击关闭按钮或遮罩。',
+                closeOnEsc: false
+            });
+        });
+
+        $('btn-before-close').addEventListener('click', () => {
+            modal.open({
+                title: 'beforeClose 拦截',
+                content: '尝试关闭时会弹出二次确认。点击“关闭”后需再确认一次才会真正关闭。',
+                closeOnOverlay: false,
+                closeOnEsc: false,
+                beforeClose: () => JCuPupw.confirm({ title: '确认关闭？', content: '确定要关闭当前弹窗吗？' }),
+                buttons: [{ text: '关闭', type: 'default' }]
+            });
+        });
+
+        $('btn-auto-close').addEventListener('click', () => {
+            modal.open({
+                title: '自动关闭',
+                content: '此弹窗将在 3 秒后自动关闭。',
+                autoClose: 3000,
+                buttons: []
+            });
+        });
+
+        $('btn-theme-dark').addEventListener('click', () => {
+            modal.open({
+                title: '暗色主题',
+                content: 'theme: dark —— 强制暗色，不受系统设置影响。',
+                theme: 'dark'
+            });
+        });
+        $('btn-theme-light').addEventListener('click', () => {
+            modal.open({
+                title: '亮色主题',
+                content: 'theme: light —— 强制亮色，不受系统设置影响。',
+                theme: 'light'
+            });
+        });
+
+        /* ===== 多弹窗管理 ===== */
+        $('btn-stack').addEventListener('click', () => {
+            modal.open({ title: '堆叠 1', content: '这是第一个弹窗（默认堆叠模式，z-index 自动递增）。' });
+            setTimeout(() => modal.open({ title: '堆叠 2', content: '第二个弹窗叠加在上方。', size: 'sm' }), 300);
+            setTimeout(() => modal.open({ title: '堆叠 3', content: '第三个弹窗，按 ESC 只关最顶层。', size: 'sm' }), 600);
+        });
+
+        $('btn-queue').addEventListener('click', () => {
+            modal.open({ title: '队列 1', content: '队列模式：关闭后自动显示下一个。', queue: true, size: 'sm' });
+            setTimeout(() => modal.open({ title: '队列 2', content: '我在排队等待显示。', queue: true, size: 'sm' }), 300);
+            setTimeout(() => modal.open({ title: '队列 3', content: '我也在排队。', queue: true, size: 'sm' }), 600);
+        });
+
+        $('btn-close-all').addEventListener('click', () => {
+            JCuPupw.closeAll();
+        });
+
+        console.log('JCuPupw 已加载，静态方法：', {
+            alert: typeof JCuPupw.alert,
+            confirm: typeof JCuPupw.confirm,
+            prompt: typeof JCuPupw.prompt,
+            toast: typeof JCuPupw.toast,
+            closeAll: typeof JCuPupw.closeAll,
+            instance: typeof JCuPupw.instance
         });
     </script>
 </body>
