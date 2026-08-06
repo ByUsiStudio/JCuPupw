@@ -436,7 +436,7 @@ class JCuPupw {
     destroy() {
         if (this._autoCloseTimer) clearTimeout(this._autoCloseTimer);
         if (this._dragHandler && this.modalTitle) {
-            this.modalTitle.removeEventListener('mousedown', this._dragHandler);
+            this.modalTitle.removeEventListener('pointerdown', this._dragHandler);
         }
         if (this.modal && this.modal.parentNode) {
             this.modal.parentNode.removeChild(this.modal);
