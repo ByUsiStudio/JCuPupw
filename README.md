@@ -15,6 +15,7 @@
 - **尺寸控制** — 预设 `sm` / `md` / `lg` / `auto` 或自定义宽度
 - **多弹窗管理** — 默认堆叠显示，支持队列模式依次展示
 - **行为钩子** — `beforeClose` 拦截、`autoClose` 自动关闭等
+- **无障碍支持** — `role="dialog"`、焦点圈禁（Focus Trap）与关闭后焦点还原、Toast `aria-live`
 - **移动端适配** — 响应式设计，触摸友好
 - **原生弹窗接管** — 一键替换 `window.alert`/`confirm`/`prompt`
 
@@ -122,7 +123,7 @@ new JCuPupw(options?)
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `title` | `string` | `'提示'` | 弹窗标题 |
-| `content` | `string` | `'默认内容'` | 弹窗内容（支持 HTML） |
+| `content` | `string \| HTMLElement \| Function` | `'默认内容'` | 弹窗内容（HTML 字符串 / DOM 节点 / 接收内容容器的函数） |
 | `buttons` | `Array` | `[{ text: '确定', action: () => close() }]` | 按钮配置数组 |
 | `size` | `'sm' \| 'md' \| 'lg' \| 'auto'` | - | 预设尺寸 |
 | `width` | `number \| string` | - | 自定义宽度（数字自动转 px） |
@@ -154,7 +155,7 @@ new JCuPupw(options?)
 | 方法 | 返回值 | 说明 |
 |------|--------|------|
 | `modal.alert(config)` | `Promise<void>` | 单按钮警告框 |
-| `modal.confirm(config)` | `Promise<boolean>` | 双按钮确认框，返回 `true`/`false` |
+| `modal.confirm(config \| string)` | `Promise<boolean>` | 双按钮确认框，返回 `true`/`false`（支持字符串简写 `confirm('消息')`） |
 | `modal.prompt(config)` | `Promise<string \| null>` | 带输入框对话框，返回输入值或 `null` |
 | `modal.toast(config)` | `{ close, el }` | 非模态 Toast 通知 |
 
@@ -169,19 +170,22 @@ const ok = await modal.confirm({
     cancelText: '取消'
 });
 
-// prompt
+// prompt — 输入框自动聚焦，回车键直接提交
 const value = await modal.prompt({
     title: '输入',
     content: '请输入邮箱',
     placeholder: 'example@email.com',
-    defaultValue: ''
+    defaultValue: '',
+    type: 'email',  // 'text' | 'password' | 'number' | 'email' | 'tel' | 'url' | 'search'
+    validate: (v) => v.includes('@') ? null : '请输入有效的邮箱地址'  // 返回错误信息则阻止提交
 });
 
 // toast
 modal.toast({
     content: '操作成功',
     type: 'success',  // 'success' | 'error' | 'warning' | 'info'
-    duration: 3000
+    duration: 3000,
+    maxCount: 5  // 同屏最大数量（默认 5），超出自动移除最早的
 });
 ```
 
@@ -210,7 +214,7 @@ modal.toast({
 | 方法 | 说明 |
 |------|------|
 | `JCuPupw.alert(config)` | 快捷 alert（使用单例） |
-| `JCuPupw.confirm(config)` | 快捷 confirm（使用单例） |
+| `JCuPupw.confirm(config \| string)` | 快捷 confirm（使用单例） |
 | `JCuPupw.prompt(config)` | 快捷 prompt（使用单例） |
 | `JCuPupw.toast(config)` | 快捷 toast（使用单例） |
 | `JCuPupw.instance()` | 获取全局单例实例 |

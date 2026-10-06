@@ -61,6 +61,11 @@
     transform: translateY(-30px);
     opacity: 0;
     transition: var(--jc-transition);
+    overscroll-behavior: contain;
+}
+
+.jc-modal__container:focus {
+    outline: none;
 }
 
 .jc-modal--active {
@@ -270,6 +275,7 @@
 .jc-modal__title--draggable {
     cursor: move;
     user-select: none;
+    touch-action: none;
 }
 
 .jc-modal[data-theme="light"] {
@@ -303,6 +309,16 @@
 .jc-modal__input:focus {
     outline: none;
     border-color: var(--jc-primary);
+}
+
+.jc-modal__input--error {
+    border-color: var(--jc-danger);
+}
+
+.jc-modal__input-error {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--jc-danger);
 }
 
 .jc-toast-container {

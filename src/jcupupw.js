@@ -155,7 +155,11 @@ class JCuPupw {
 
             this.modal.classList.add('jc-modal--active');
             this.modal.style.zIndex = ++JCuPupw._zIndexBase;
-            document.body.style.overflow = 'hidden';
+            this._lockScroll();
+
+            // 焦点管理：记住打开前的焦点元素，移入弹窗以便键盘操作
+            this._previouslyFocused = document.activeElement;
+            this.container.focus();
 
             if (queue) JCuPupw._showing = this;
 
@@ -187,8 +191,7 @@ class JCuPupw {
             }
 
             this.modal.classList.add('jc-modal--closing');
-            const animationDuration = 500;
-            setTimeout(() => {
+            this._waitForCloseAnimation().then(() => {
                 this.modal.classList.remove('jc-modal--closing');
                 this.modal.classList.remove('jc-modal--active');
                 this.container.style.left = '';
@@ -196,9 +199,9 @@ class JCuPupw {
                 this.container.style.margin = '';
                 this.container.style.transform = '';
                 this._dragOffset = { x: 0, y: 0 };
-                if (!JCuPupw._hasOpenModal()) {
-                    document.body.style.overflow = '';
-                }
+                this._unlockScroll();
+                this._restoreFocus();
+                this._resolvePending();
                 this.triggerEvent('close');
                 this.config.onClose?.();
                 if (this.config.queue && JCuPupw._showing === this) {
@@ -206,8 +209,59 @@ class JCuPupw {
                     JCuPupw._showNext();
                 }
                 resolve(true);
-            }, animationDuration);
+            });
         });
+    }
+
+    _waitForCloseAnimation() {
+        return new Promise((resolve) => {
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(fallback);
+                this.modal?.removeEventListener('animationend', onEnd);
+                this.modal?.removeEventListener('transitionend', onEnd);
+                resolve();
+            };
+            const onEnd = (e) => {
+                // 容器的退出动画 / 遮罩的淡出过渡，任一结束即视为关闭动画完成
+                if (e.type === 'animationend' && e.target === this.container) finish();
+                else if (e.type === 'transitionend' && e.target === this.overlay) finish();
+            };
+            // 降级兜底：动画事件未触发时（如系统开启"减弱动态效果"）按动画时长 + 冗余处理
+            const fallback = setTimeout(finish, 700);
+            this.modal.addEventListener('animationend', onEnd);
+            this.modal.addEventListener('transitionend', onEnd);
+        });
+    }
+
+    _restoreFocus() {
+        const el = this._previouslyFocused;
+        this._previouslyFocused = null;
+        if (el && typeof el.focus === 'function') el.focus();
+    }
+
+    _resolvePending() {
+        const pending = this._pendingResolves;
+        this._pendingResolves = [];
+        pending.forEach(p => p.resolve(p.defaultValue));
+    }
+
+    _lockScroll() {
+        JCuPupw._scrollLockCount++;
+        if (JCuPupw._scrollLockCount > 1) return;
+        // 补偿滚动条宽度，避免锁定时页面内容抖动
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        document.body.style.overflow = 'hidden';
+        if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    _unlockScroll() {
+        JCuPupw._scrollLockCount = Math.max(0, JCuPupw._scrollLockCount - 1);
+        if (JCuPupw._scrollLockCount > 0) return;
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
     }
 
     _applySize(size, width) {
@@ -248,13 +302,28 @@ class JCuPupw {
         const startY = e.clientY;
         const origin = { x: this._dragOffset.x, y: this._dragOffset.y };
 
+        // 以拖拽起始位置为基准计算边界，避免拖拽过程中反复读取布局
+        const rect = this.container.getBoundingClientRect();
+        const base = {
+            left: rect.left - this._dragOffset.x,
+            top: rect.top - this._dragOffset.y,
+            width: rect.width,
+            height: rect.height
+        };
+
         this.container.style.willChange = 'transform';
         document.body.style.userSelect = 'none';
 
+        const MIN_VISIBLE = 60; // 视口内至少保留的可见像素
         const onMove = (ev) => {
-            this._dragOffset.x = origin.x + (ev.clientX - startX);
-            this._dragOffset.y = origin.y + (ev.clientY - startY);
-            this.container.style.transform = `translate(${this._dragOffset.x}px, ${this._dragOffset.y}px)`;
+            let x = origin.x + (ev.clientX - startX);
+            let y = origin.y + (ev.clientY - startY);
+            // 边界限制：弹窗不能被完全拖出视口
+            x = Math.min(Math.max(x, MIN_VISIBLE - base.width - base.left), window.innerWidth - MIN_VISIBLE - base.left);
+            y = Math.min(Math.max(y, MIN_VISIBLE - base.height - base.top), window.innerHeight - MIN_VISIBLE - base.top);
+            this._dragOffset.x = x;
+            this._dragOffset.y = y;
+            this.container.style.transform = `translate(${x}px, ${y}px)`;
         };
         const onUp = () => {
             document.removeEventListener('pointermove', onMove);
@@ -267,7 +336,18 @@ class JCuPupw {
     }
 
     setTitle(title) { this.modalTitle.textContent = title; return this; }
-    setContent(content) { this.modalContent.innerHTML = content; return this; }
+    setContent(content) {
+        if (typeof content === 'function') {
+            // 函数形式：接收内容容器，可直接操作 DOM；有返回值时按字符串/节点继续处理
+            const result = content(this.modalContent);
+            if (result != null) this.setContent(result);
+        } else if (content instanceof Node) {
+            this.modalContent.replaceChildren(content);
+        } else {
+            this.modalContent.innerHTML = content;
+        }
+        return this;
+    }
 
     addButton(text, action, type = 'default') {
         const button = document.createElement('button');
@@ -296,6 +376,8 @@ class JCuPupw {
     }
 
     confirm(config = {}) {
+        // 支持字符串简写：confirm('确定要执行吗？')
+        if (typeof config === 'string') config = { content: config };
         const {
             title = '确认',
             content = '确定要执行此操作吗？',
@@ -303,6 +385,8 @@ class JCuPupw {
             cancelText = '取消'
         } = config;
         return new Promise((resolve) => {
+            // ESC / 遮罩 / 关闭按钮等非确认路径关闭时，兜底返回 false
+            this._pendingResolves.push({ resolve, defaultValue: false });
             this.open({
                 ...config,
                 title,
@@ -322,37 +406,67 @@ class JCuPupw {
             placeholder = '',
             defaultValue = '',
             confirmText = '确定',
-            cancelText = '取消'
+            cancelText = '取消',
+            type = 'text',
+            validate = null
         } = config;
+        const inputType = ['text', 'password', 'number', 'email', 'tel', 'url', 'search'].includes(type) ? type : 'text';
         const inputId = `jc-prompt-${Date.now()}`;
         const label = content ? `<div style="margin-bottom:12px;">${content}</div>` : '';
-        const html = `${label}<input id="${inputId}" class="jc-modal__input" type="text" placeholder="${placeholder}" value="${String(defaultValue).replace(/"/g, '&quot;')}" />`;
+        const html = `${label}<input id="${inputId}" class="jc-modal__input" type="${inputType}" placeholder="${placeholder}" value="${String(defaultValue).replace(/"/g, '&quot;')}" /><div class="jc-modal__input-error" hidden></div>`;
         return new Promise((resolve) => {
+            this._pendingResolves.push({ resolve, defaultValue: null });
+
+            const showError = (message) => {
+                const errorEl = this.modalContent?.querySelector('.jc-modal__input-error');
+                if (errorEl) {
+                    errorEl.textContent = String(message);
+                    errorEl.hidden = false;
+                }
+                document.getElementById(inputId)?.classList.add('jc-modal__input--error');
+            };
+            const clearError = () => {
+                const errorEl = this.modalContent?.querySelector('.jc-modal__input-error');
+                if (errorEl) errorEl.hidden = true;
+                document.getElementById(inputId)?.classList.remove('jc-modal__input--error');
+            };
+            const submit = () => {
+                const input = document.getElementById(inputId);
+                const value = input ? input.value : null;
+                if (typeof validate === 'function') {
+                    const err = validate(value);
+                    if (err) { showError(err); return; }
+                }
+                resolve(value);
+            };
+
             this.open({
                 ...config,
                 title,
                 content: html,
                 buttons: [
                     { text: cancelText, type: 'default', action: () => resolve(null) },
-                    { text: confirmText, type: 'primary', action: () => {
-                        const input = document.getElementById(inputId);
-                        resolve(input ? input.value : null);
-                    }}
+                    { text: confirmText, type: 'primary', action: submit }
                 ]
+            }).then(() => {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                input.addEventListener('input', clearError);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submit();
+                    }
+                });
+                input.focus();
+                if (defaultValue) input.select();
             });
         });
     }
 
     toast(config = {}) {
-        const { content = '', type = 'info', duration = 3000 } = config;
-        return JCuPupw._showToast(content, type, duration);
-    }
-
-    static _hasOpenModal() {
-        for (const inst of JCuPupw._instances) {
-            if (inst.isOpen()) return true;
-        }
-        return false;
+        const { content = '', type = 'info', duration = 3000, maxCount } = config;
+        return JCuPupw._showToast(content, type, duration, maxCount);
     }
 
     static _getTopInstance() {
@@ -364,6 +478,45 @@ class JCuPupw {
             if (z > maxZ) { maxZ = z; top = inst; }
         }
         return top;
+    }
+
+    // 类级别只绑定一次全局键盘监听，避免多实例重复绑定导致泄漏
+    static _ensureGlobalListeners() {
+        if (JCuPupw._globalListenersBound) return;
+        JCuPupw._globalListenersBound = true;
+        document.addEventListener('keydown', (e) => {
+            const top = JCuPupw._getTopInstance();
+            if (!top) return;
+            if (e.key === 'Escape') {
+                if (top.config.closeOnEsc === false) return;
+                top.close();
+            } else if (e.key === 'Tab') {
+                top._trapFocus(e);
+            }
+        });
+    }
+
+    _trapFocus(e) {
+        if (!this.container) return;
+        const focusables = this.container.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        );
+        const visible = [...focusables].filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
+        if (visible.length === 0) {
+            e.preventDefault();
+            this.container.focus();
+            return;
+        }
+        const first = visible[0];
+        const last = visible[visible.length - 1];
+        // 焦点在弹窗外或已到边界时循环，其余情况交给浏览器默认行为
+        if (e.shiftKey && (document.activeElement === first || !this.container.contains(document.activeElement))) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !this.container.contains(document.activeElement))) {
+            e.preventDefault();
+            first.focus();
+        }
     }
 
     static _showNext() {
@@ -444,15 +597,23 @@ class JCuPupw {
         }
     }
 
-    static _showToast(content, type, duration) {
+    static _showToast(content, type, duration, maxCount) {
         const container = JCuPupw._getToastContainer();
+        const limit = Number.isFinite(maxCount) && maxCount > 0 ? maxCount : JCuPupw._toastMaxCount;
+        // 超出上限时立即移除最早的 Toast
+        while (container.children.length >= limit) {
+            container.firstElementChild.remove();
+        }
         const toast = document.createElement('div');
         toast.className = `jc-toast jc-toast--${type}`;
         toast.textContent = content;
         container.appendChild(toast);
         requestAnimationFrame(() => toast.classList.add('jc-toast--visible'));
 
+        let closed = false;
         const remove = () => {
+            if (closed) return;
+            closed = true;
             toast.classList.remove('jc-toast--visible');
             toast.classList.add('jc-toast--leaving');
             setTimeout(() => toast.remove(), 300);
@@ -467,6 +628,7 @@ class JCuPupw {
             c = document.createElement('div');
             c.id = 'jcToastContainer';
             c.className = 'jc-toast-container';
+            c.setAttribute('aria-live', 'polite');
             document.body.appendChild(c);
         }
         return c;
@@ -492,6 +654,10 @@ class JCuPupw {
         if (this._dragHandler && this.modalTitle) {
             this.modalTitle.removeEventListener('pointerdown', this._dragHandler);
         }
+        if (this.isOpen()) this._unlockScroll();
+        // 未兑现的 confirm/prompt 以默认值兜底，避免调用方永久等待
+        this._pendingResolves.forEach(p => p.resolve(p.defaultValue));
+        this._pendingResolves = [];
         if (this.modal && this.modal.parentNode) {
             this.modal.parentNode.removeChild(this.modal);
         }

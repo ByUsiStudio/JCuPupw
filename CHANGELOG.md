@@ -5,6 +5,47 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.0] - 2026-10-06
+
+### 新增
+
+#### 无障碍（a11y）
+- 弹窗容器添加 `role="dialog"`、`aria-modal="true"`、`aria-labelledby`
+- 焦点圈禁（Focus Trap）：`Tab` / `Shift+Tab` 在弹窗内循环，不会逃逸到页面背景
+- 焦点管理：打开时焦点移入弹窗，关闭后还原到打开前的元素
+- 关闭按钮添加 `aria-label="关闭"`，Toast 容器添加 `aria-live="polite"`
+
+#### prompt 增强
+- 输入框自动聚焦，有默认值时自动全选
+- 回车键直接提交
+- 新增 `type` 选项：`text` / `password` / `number` / `email` / `tel` / `url` / `search`
+- 新增 `validate` 校验函数：返回错误信息字符串时阻止提交并显示错误提示，输入时自动清除
+
+#### content 类型扩展
+- `open({ content })` / `setContent()` 除 HTML 字符串外，支持传入 DOM 节点（`HTMLElement`）或函数（接收内容容器，可直接操作 DOM）
+
+#### 拖拽边界
+- 弹窗不能被拖出视口，四周至少保留 60px 可见区域
+- 可拖拽标题栏添加 `touch-action: none`，避免移动端拖拽与页面滚动冲突
+
+#### 滚动锁定优化
+- 锁定 `body` 滚动时补偿滚动条宽度，避免页面内容抖动
+- 滚动锁改为引用计数管理，多弹窗堆叠时正确恢复页面滚动
+- 弹窗容器添加 `overscroll-behavior: contain`，防止滚动穿透
+
+#### Toast 上限
+- 新增 `maxCount` 选项（默认 5），同屏超出上限时自动移除最早的 Toast
+
+### 修复
+- **`confirm()` / `prompt()` Promise 挂起**：通过 ESC、遮罩点击或关闭按钮关闭时 Promise 永不兑现，现在会以默认值兜底（`false` / `null`）；`destroy()` 时同样兜底
+- **ESC 监听器泄漏**：每个实例都向 `document` 绑定 `keydown` 且 `destroy()` 不移除，改为类级别仅绑定一次
+- **触发器 JSON 解析崩溃**：`data-modal-buttons` 格式错误时抛出未捕获异常，现在安全降级为空按钮列表并输出警告
+- **关闭动画时长硬编码**：从固定 `setTimeout(500)` 改为监听 `animationend` / `transitionend`（保留 700ms 兜底，兼容"减弱动态效果"）
+- **文档示例错误**：`beforeClose` 示例中 `JCuPupw.confirm('消息')` 传字符串不生效，现正式支持字符串简写
+
+### 变更
+- 版本号升级至 1.1.0
+
 ## [1.0.0] - 2026-08-06
 
 ### 新增
