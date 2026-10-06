@@ -6,6 +6,9 @@ class JCuPupw {
     static _queue = [];
     static _showing = null;
     static _singleton = null;
+    static _toastMaxCount = 5;
+    static _scrollLockCount = 0;
+    static _globalListenersBound = false;
 
     constructor(options = {}) {
         this.modalId = options.id || 'jcModal';
@@ -13,6 +16,8 @@ class JCuPupw {
         this.config = {};
         this._autoCloseTimer = null;
         this._dragHandler = null;
+        this._pendingResolves = [];
+        this._previouslyFocused = null;
         this._buildDOM();
         this.injectStyles();
         this.init();
@@ -28,9 +33,9 @@ class JCuPupw {
         modal.className = 'jc-modal';
         modal.innerHTML = `
             <div class="jc-modal__overlay"></div>
-            <div class="jc-modal__container">
-                <button type="button" class="jc-modal__close">&times;</button>
-                <h2 class="jc-modal__title">提示</h2>
+            <div class="jc-modal__container" role="dialog" aria-modal="true" aria-labelledby="${this.modalId}-title" tabindex="-1">
+                <button type="button" class="jc-modal__close" aria-label="关闭">&times;</button>
+                <h2 class="jc-modal__title" id="${this.modalId}-title">提示</h2>
                 <div class="jc-modal__content">默认内容</div>
                 <div class="jc-modal__actions"></div>
                 <div class="jc-modal__loading">
@@ -68,13 +73,7 @@ class JCuPupw {
             }
         });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen()) {
-                if (this.config.closeOnEsc === false) return;
-                if (JCuPupw._getTopInstance() !== this) return;
-                this.close();
-            }
-        });
+        JCuPupw._ensureGlobalListeners();
 
         document.querySelectorAll('.jc-modal-trigger').forEach(trigger => {
             if (trigger._jcBound) return;
@@ -86,7 +85,12 @@ class JCuPupw {
     openFromTrigger(trigger) {
         const title = trigger.getAttribute('data-modal-title');
         const content = trigger.getAttribute('data-modal-content');
-        const buttons = JSON.parse(trigger.getAttribute('data-modal-buttons') || '[]');
+        let buttons = [];
+        try {
+            buttons = JSON.parse(trigger.getAttribute('data-modal-buttons') || '[]');
+        } catch (e) {
+            console.warn('[JCuPupw] data-modal-buttons 解析失败，已忽略:', e);
+        }
         const size = trigger.getAttribute('data-modal-size');
         const draggable = trigger.getAttribute('data-modal-draggable') === 'true';
 
