@@ -5,12 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.2.0] - 2026-11-07
 
 ### 新增
 - **锚定定位**：`open()` 新增 `anchor` / `placement` 配置，弹窗跟随触发元素的位置弹出；`auto` 优先下方，空间不足时自动翻转，并收敛在视口内；窗口尺寸变化时自动重新定位
-- 触发器新增 `data-modal-anchor` / `data-modal-placement` 属性，无需编写 JS 即可让弹窗跟随按钮定位
-- `tests/regression.html` 新增锚定定位断言（共 87 项）
+- 触发器模式默认按触发按钮的位置弹出弹窗，可用 `data-modal-anchor="false"` 回退到居中；新增 `data-modal-placement` 属性指定方向
+- **弹出动画**：入场以触发按钮中心为起点，边移动边放大到目标位置，退场飞回按钮；新增 `placement: 'center'` 居中飞入模式，触发器可用 `data-modal-placement="center"` 切换
+- 新的缩放弹出动画全局生效，普通居中弹窗同样使用弹性入场/退场；新增 `easing: 'nonlinear' | 'linear'`（默认 `nonlinear`）与 `data-modal-easing` 属性；非线性动画到位后会轻微放大再恢复，线性则匀速无回弹
+- 修复指定方向空间不足时被裁切/覆盖按钮的问题：`left` / `right` / `top` / `bottom` 放不下会自动翻转到反方向，仍放不下时按最佳方向收敛
+- **样式改用 LESS**：`src/jcupupw.css` 拆分为 `src/styles/*.less`（变量、混入、基础、容器、内容、按钮、反馈、动画、主题、响应式），构建期由 Rollup 编译为字符串内联；新增标题、正文、操作区错峰入场等动画，原有动画名称与 `linear` / `nonlinear` 行为保持不变
+- **lolilota 主题特殊参数**：`html` / `body` 设置 `data-lolilota-css-start="start_byusi_bei"`（兼容 `data-lolilota_css_start`）时，自动注入 `src/less` 编译出的整站主题，并为 `html` 添加 `jc-lolilota-mode`；该模式下按钮悬浮效果被禁用（主题按钮 `:hover` 规则构建期剔除，库自身悬浮规则由模式类守卫）
+- `tests/regression.html` 新增锚定定位、弹出动画与 lolilota 主题断言（共 110 项）
 
 ## [1.1.1] - 2026-11-07
 

@@ -420,7 +420,45 @@ async function flush(ms = 40) { await sleep(ms); }
         check('anchor: auto flips to top near viewport bottom', m.container.dataset.placement === 'top', m.container.dataset.placement);
         check('anchor: flipped top edge sits above the trigger', Math.abs(parseFloat(m.container.style.top) - (bottomRect.top - 10 - m.container.offsetHeight)) <= 1);
 
-        await m.close();
+        // center 模式：弹窗最终居中，动画从按钮位置飞入
+        opener.style.top = '200px';
+        await m.open({ content: 'x', anchor: opener, placement: 'center' });
+        await flush(60);
+        const centerRect = opener.getBoundingClientRect();
+        const dialog = m.container.closest('dialog');
+        const modalCenter = m.container.offsetLeft + m.container.offsetWidth / 2;
+        const dialogCenter = dialog.offsetLeft + dialog.offsetWidth / 2;
+        check('anchor: center mode drops anchored layout', !m.container.classList.contains('jc-modal__container--anchored') && m.container.style.left === '' && m.container.style.top === '');
+        check('anchor: center mode uses pop-from-anchor animation', getComputedStyle(m.container).animationName === 'jc-popFromAnchor', getComputedStyle(m.container).animationName);
+        check('anchor: default easing is nonlinear', getComputedStyle(m.container).animationTimingFunction.indexOf('cubic-bezier') !== -1, getComputedStyle(m.container).animationTimingFunction);
+        const openAnim = m.container.getAnimations().find(a => a.animationName === 'jc-popFromAnchor');
+        if (openAnim && openAnim.effect) {
+            openAnim.pause();
+            openAnim.currentTime = openAnim.effect.getTiming().duration * 0.65;
+            const matrix = getComputedStyle(m.container).transform;
+            const overshoot = matrix.startsWith('matrix(') ? parseFloat(matrix.slice(7)) : 1;
+            check('anchor: nonlinear pop overshoots before settling', overshoot > 1.01, `scale=${overshoot}`);
+            openAnim.finish();
+        } else {
+            check('anchor: nonlinear pop overshoots before settling', false, 'missing animation');
+        }
+        check('anchor: from-anchor offsets point at the trigger', Math.abs(parseFloat(m.container.style.getPropertyValue('--jc-from-x')) - (centerRect.left + centerRect.width / 2 - modalCenter)) <= 1);
+        check('anchor: center mode keeps dialog horizontally centered', Math.abs(modalCenter - dialogCenter) <= 2, `center=${modalCenter} dialog=${dialogCenter}`);
+
+        // 靠近左边时 left 放不下，应翻转到右侧；同时验证 linear 动画模式
+        opener.style.left = '20px';
+        await m.open({ content: 'x', anchor: opener, placement: 'left', easing: 'linear' });
+        await flush(40);
+        const leftRect = opener.getBoundingClientRect();
+        check('anchor: left placement flips to the right when there is no room', m.container.dataset.placement === 'right', m.container.dataset.placement);
+        check('anchor: flipped left popup sits right of the trigger', Math.abs(parseFloat(m.container.style.left) - (leftRect.right + 10)) <= 1);
+        check('anchor: linear easing adds linear class', m.container.classList.contains('jc-modal__container--linear'));
+        check('anchor: linear easing is applied to the animation', getComputedStyle(m.container).animationTimingFunction === 'linear', getComputedStyle(m.container).animationTimingFunction);
+        check('anchor: linear pop uses non-bounce keyframes', getComputedStyle(m.container).animationName === 'jc-popFromAnchorLinear', getComputedStyle(m.container).animationName);
+
+        const closing = m.close();
+        check('anchor: close animation returns to the trigger', getComputedStyle(m.container).animationName === 'jc-popToAnchor', getComputedStyle(m.container).animationName);
+        await closing;
         await sleep(900);
         check('anchor: class and inline position cleared after close', !m.container.classList.contains('jc-modal__container--anchored') && m.container.style.left === '' && m.container.style.top === '');
         m.destroy();
@@ -435,6 +473,42 @@ async function flush(ms = 40) { await sleep(ms); }
         await sleep(900);
         host.innerHTML = '';
         opener.remove();
+    })();
+
+    /* ===== 附加：lolilota_css_start 特殊参数 ===== */
+    await (async () => {
+        check('lolilota: theme not injected by default', !document.getElementById('jcLolilotaStyles'));
+
+        document.documentElement.setAttribute('data-lolilota-css-start', 'start_byusi_bei');
+        const m = new JCuPupw({ id: 't17' });
+        await m.open({ content: 'theme', buttons: [{ text: '确定', type: 'primary' }] });
+        await flush(40);
+
+        const theme = document.getElementById('jcLolilotaStyles');
+        const css = theme?.textContent || '';
+        const buttonHover = /(jc-modal__button[^,{]*|jc-modal__close|pill-btn[^,{]*|account-fab[^,{]*|account-submit[^,{]*|hist-del|jc-export-option)[^,{]*:hover/;
+
+        check('lolilota: theme injected when value matches', !!theme);
+        check('lolilota: html mode class added', document.documentElement.classList.contains('jc-lolilota-mode'));
+        check('lolilota: static helper reports mode', JCuPupw.isLolilotaMode() === true);
+        check('lolilota: compiled theme keeps site styles', css.includes('.home-container') && css.includes('.sparkle'));
+        check('lolilota: button hover rules stripped from theme', !buttonHover.test(css));
+        check('lolilota: non-button hover rules kept', css.includes('.suggest-item:hover'));
+        check('lolilota: library hover is guarded by mode class', document.getElementById('jcPupwStyles').textContent.includes('html:not(.jc-lolilota-mode) .jc-modal__button:hover'));
+        const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+        const expectedBg = dark ? 'rgb(30, 39, 64)' : 'rgb(253, 254, 254)';
+        const expectedTitle = dark ? 'rgb(188, 214, 247)' : 'rgb(74, 111, 165)';
+        check('lolilota: modal uses theme background token', getComputedStyle(m.container).backgroundColor === expectedBg, getComputedStyle(m.container).backgroundColor);
+        check('lolilota: modal title uses theme brand color', getComputedStyle(m.modalTitle).color === expectedTitle, getComputedStyle(m.modalTitle).color);
+        check('lolilota: content stagger animation applied', getComputedStyle(m.modalTitle).animationName === 'jc-contentIn', getComputedStyle(m.modalTitle).animationName);
+
+        await m.close();
+        await sleep(900);
+        m.destroy();
+
+        document.documentElement.removeAttribute('data-lolilota-css-start');
+        document.documentElement.classList.remove('jc-lolilota-mode');
+        theme?.remove();
     })();
 
     /* ===== 汇总 ===== */

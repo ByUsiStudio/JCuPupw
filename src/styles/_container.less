@@ -1,0 +1,67 @@
+// =============================================================================
+// JCuPupw · 弹窗容器、尺寸、锚定与拖拽
+// =============================================================================
+
+.jc-modal__container {
+    position: relative;
+    background: var(--jc-background);
+    margin: 20vh auto;
+    padding: 24px;
+    width: 90%;
+    max-width: @jc-size-md;
+    border-radius: var(--jc-radius);
+    box-shadow: var(--jc-shadow);
+    transform: translateY(-30px);
+    opacity: 0;
+    transition: var(--jc-transition);
+    overscroll-behavior: contain;
+}
+
+.jc-modal__container:focus {
+    outline: none;
+}
+
+// ---- 尺寸 --------------------------------------------------------------
+.jc-modal__container--sm {
+    --jc-max-width: @jc-size-sm;
+    max-width: @jc-size-sm;
+}
+
+.jc-modal__container--md {
+    --jc-max-width: @jc-size-md;
+    max-width: @jc-size-md;
+}
+
+.jc-modal__container--lg {
+    --jc-max-width: @jc-size-lg;
+    max-width: @jc-size-lg;
+}
+
+.jc-modal__container--auto {
+    --jc-max-width: 90%;
+    max-width: 90%;
+}
+
+/* 锚定模式：由 JS 写入 left/top，按触发元素位置收缩为气泡尺寸 */
+.jc-modal__container--anchored {
+    position: absolute;
+    width: max-content;
+    min-width: 200px;
+    max-width: min(var(--jc-max-width, @jc-size-md), calc(100vw - @jc-viewport-margin * 2));
+    max-height: calc(100vh - @jc-viewport-margin * 2);
+    margin: 0;
+    overflow-y: auto;
+}
+
+// ---- 拖拽 --------------------------------------------------------------
+.jc-modal__title--draggable {
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+}
+
+/* 拖拽期间关闭过渡，避免每次 pointermove 都触发 0.3s 缓动造成拖影 */
+.jc-modal__container--dragging {
+    transition: none;
+    will-change: transform, translate;
+}

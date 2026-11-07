@@ -1,0 +1,53 @@
+// =============================================================================
+// JCuPupw · 基础与遮罩
+// =============================================================================
+
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 原生 <dialog open> 时锁定页面滚动。纯 CSS 实现，无需 JS 记录/恢复 body 内联样式；
+   scrollbar-gutter 预留滚动条宽度，避免打开弹窗时页面横向抖动。 */
+html:has(dialog.jc-modal[open]) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+.jc-modal {
+    /* 重置 <dialog> 的 UA 样式，让弹窗铺满视口并保留现有 BEM 结构 */
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    overflow: visible;
+    z-index: 1000;
+}
+
+.jc-modal[open] {
+    display: block;
+}
+
+/* 遮罩由 .jc-modal__overlay 负责，隐藏浏览器默认的半透明 backdrop */
+.jc-modal::backdrop {
+    background: transparent;
+}
+
+.jc-modal__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, .5);
+    backdrop-filter: var(--jc-blur);
+    opacity: 0;
+    transition: opacity @jc-dur-fast ease;
+}

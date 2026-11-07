@@ -1,0 +1,57 @@
+// =============================================================================
+// JCuPupw · 标题、内容、操作区与表单
+// =============================================================================
+
+.jc-modal__title {
+    margin: 0 0 16px;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--jc-text);
+    padding-right: 40px;
+}
+
+.jc-modal__content {
+    margin: 16px 0;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--jc-text-light);
+}
+
+.jc-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.jc-modal__form {
+    margin: 0;
+}
+
+.jc-modal__input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--jc-border);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--jc-text);
+    background: var(--jc-background);
+    box-sizing: border-box;
+    transition: border-color .2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: var(--jc-primary);
+    }
+
+    &--error {
+        border-color: var(--jc-danger);
+    }
+}
+
+.jc-modal__input-error {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--jc-danger);
+}

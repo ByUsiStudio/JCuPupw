@@ -1,6 +1,6 @@
 {
   "name": "jcupupw",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A lightweight modal dialog library for browsers, supporting Node.js (CommonJS) and browser global usage.",
   "main": "dist/jcupupw.cjs",
   "module": "dist/jcupupw.esm.js",
@@ -15,7 +15,7 @@
     "jcupupw"
   ],
   "author": "北啊呢 <177828525@qq.com> (https://github.com/ByUsiStudio)",
-  "license": "AGPL-3.0-or-later",
+  "license": "AGPL-3.0",
   "homepage": "https://github.com/ByUsiStudio/JCuPupw",
   "repository": {
     "type": "git",
@@ -27,6 +27,7 @@
   "type": "module",
   "devDependencies": {
     "javascript-obfuscator": "^5.5.0",
+    "less": "^4.9.1",
     "rollup": "^4.0.0",
     "rollup-plugin-obfuscator": "^1.1.0",
     "rollup-plugin-string": "^3.0.0"

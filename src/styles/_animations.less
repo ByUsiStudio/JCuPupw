@@ -1,0 +1,174 @@
+// =============================================================================
+// JCuPupw · 弹出 / 关闭动画
+//
+// 关键帧名称与既有版本保持一致，避免破坏调用方与回归测试：
+//   jc-fadeInUp / jc-fadeInUpLinear / jc-fadeOutDown
+//   jc-popFromAnchor / jc-popFromAnchorLinear / jc-popToAnchor
+//
+// 非线性模式在到位后轻微放大再回落；线性模式使用无回弹关键帧。
+// 新增 jc-contentIn 用于标题、正文、操作区的错峰入场。
+// =============================================================================
+
+.jc-modal--active {
+    display: block;
+
+    .jc-modal__overlay {
+        opacity: 1;
+    }
+
+    .jc-modal__container {
+        /* 不使用 forwards：动画结束后由本规则接管 transform；
+           拖拽使用独立的 translate 属性，不会被动画的 transform 覆盖 */
+        opacity: 1;
+        transform: translateY(0);
+        animation: jc-fadeInUp @jc-dur-pop @jc-ease-out;
+    }
+
+    .jc-modal__container--from-anchor {
+        animation: jc-popFromAnchor @jc-dur-pop @jc-ease-out;
+    }
+
+    // 内容错峰入场：标题 -> 正文 -> 操作区
+    &:not(.jc-modal--closing) {
+        .jc-modal__title {
+            .jc-stagger-in(.04s);
+        }
+
+        .jc-modal__content {
+            .jc-stagger-in(.1s);
+        }
+
+        .jc-modal__actions {
+            .jc-stagger-in(.16s);
+        }
+    }
+}
+
+.jc-modal--closing {
+    .jc-modal__overlay {
+        opacity: 0;
+        transition: opacity @jc-dur-close ease;
+    }
+
+    .jc-modal__container {
+        animation: jc-fadeOutDown @jc-dur-close @jc-ease-in forwards;
+    }
+
+    .jc-modal__container--from-anchor {
+        animation: jc-popToAnchor @jc-dur-anchor-close @jc-ease-in forwards;
+    }
+
+    // 关闭时取消错峰动画，避免容器退场后内容仍在播放入场
+    .jc-modal__title,
+    .jc-modal__content,
+    .jc-modal__actions {
+        animation: none;
+    }
+}
+
+/* 线性动画模式：只替换时间曲线，弹出样式全局生效 */
+.jc-modal--active .jc-modal__container--linear,
+.jc-modal--closing .jc-modal__container--linear {
+    animation-timing-function: linear;
+}
+
+/* 线性模式使用无回弹关键帧，非线性默认会稍微放大再恢复 */
+.jc-modal--active:not(.jc-modal--closing) .jc-modal__container--linear {
+    animation-name: jc-fadeInUpLinear;
+}
+
+.jc-modal--active:not(.jc-modal--closing) .jc-modal__container--from-anchor.jc-modal__container--linear {
+    animation-name: jc-popFromAnchorLinear;
+}
+
+// ---- 关键帧 ------------------------------------------------------------
+@keyframes jc-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes jc-fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(16px) scale(.85);
+    }
+    70% {
+        opacity: 1;
+        transform: translateY(0) scale(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes jc-fadeInUpLinear {
+    0% {
+        opacity: 0;
+        transform: translateY(16px) scale(.85);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes jc-fadeOutDown {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(16px) scale(.9);
+    }
+}
+
+@keyframes jc-popFromAnchor {
+    0% {
+        opacity: 0;
+        transform: translate(var(--jc-from-x, 0px), var(--jc-from-y, 0px)) scale(.45);
+    }
+    65% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1.03);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes jc-popFromAnchorLinear {
+    0% {
+        opacity: 0;
+        transform: translate(var(--jc-from-x, 0px), var(--jc-from-y, 0px)) scale(.45);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes jc-popToAnchor {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--jc-from-x, 0px), var(--jc-from-y, 0px)) scale(.45);
+    }
+}
+
+// 内容错峰入场：轻微上移 + 透明度渐变
+@keyframes jc-contentIn {
+    0% {
+        opacity: 0;
+        transform: translateY(8px) scale(.98);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

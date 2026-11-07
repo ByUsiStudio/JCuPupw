@@ -109,8 +109,11 @@ const modal = new JCuPupw();
 - `data-modal-target`：指定由哪个实例打开（值需与构造函数的 `id` 一致）。省略时使用全局单例。
   若指定的 id 尚无活跃实例，会自动创建一个。
 - `data-modal-buttons`：JSON 数组，字段与 `buttons` 配置相同。
-- `data-modal-anchor`：存在该属性时弹窗跟随触发元素定位。值为 `"true"` 表示使用按钮自身，也可填 CSS 选择器。
-- `data-modal-placement`：`auto` / `top` / `bottom` / `left` / `right`，默认 `auto`。
+- `data-modal-anchor`：触发器打开的弹窗默认跟随按钮定位。设为 `"false"` 回退到居中弹窗；
+  也可填 CSS 选择器，改用页面上的其它元素作为锚点。
+- `data-modal-placement`：`auto` / `center` / `top` / `bottom` / `left` / `right`，默认 `auto`。
+  `center` 表示弹窗最终居中，但入场动画仍从按钮位置放大飞入。
+- `data-modal-easing`：`nonlinear`（默认，弹性）或 `linear`（匀速）。
 
 ## API 参考
 
@@ -144,8 +147,9 @@ new JCuPupw(options?)
 | `size` | `'sm' \| 'md' \| 'lg' \| 'auto'` | - | 预设尺寸 |
 | `width` | `number \| string` | - | 自定义宽度（数字自动转 px） |
 | `draggable` | `boolean` | `false` | 是否可拖拽标题栏 |
-| `anchor` | `Element \| string` | - | 锚点元素或 CSS 选择器，弹窗跟随其位置弹出 |
-| `placement` | `'auto' \| 'top' \| 'bottom' \| 'left' \| 'right'` | `'auto'` | 相对锚点的方向；`auto` 优先下方，空间不足时自动翻转 |
+| `anchor` | `Element \| string` | - | 锚点元素或 CSS 选择器，弹窗跟随其位置弹出，并作为入场动画起点 |
+| `placement` | `'auto' \| 'center' \| 'top' \| 'bottom' \| 'left' \| 'right'` | `'auto'` | 相对锚点的方向；`auto` 优先下方，空间不足时自动翻转；`center` 表示最终居中并从锚点飞入；指定方向放不下时也会翻转到反方向 |
+| `easing` | `'nonlinear' \| 'linear'` | `'nonlinear'` | 动画时间曲线；`nonlinear` 在到位后轻微放大再回弹，`linear` 匀速且无回弹 |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | 主题类型 |
 | `closeOnOverlay` | `boolean` | `true` | 点击遮罩是否关闭 |
 | `closeOnEsc` | `boolean` | `true` | 按 ESC 是否关闭 |
@@ -289,7 +293,8 @@ modal.open({
 ### 锚定到触发按钮
 
 传入 `anchor` 即可让弹窗跟随按钮位置显示；`placement` 默认 `auto`，优先显示在按钮下方，
-空间不足时自动翻转到上方，左右方向同理，最终位置会被限制在视口内：
+空间不足时自动翻转到上方，左右方向同理，最终位置会被限制在视口内。
+入场动画会以按钮中心为起点，移动到目标位置并放大，关闭时再飞回按钮：
 
 ```javascript
 button.addEventListener('click', (e) => {
@@ -298,22 +303,40 @@ button.addEventListener('click', (e) => {
         content: '这段弹窗会出现在按钮旁边',
         size: 'sm',
         anchor: e.currentTarget,
-        placement: 'auto' // 可选：top / bottom / left / right
+        placement: 'auto' // 可选：center / top / bottom / left / right
     });
 });
 ```
 
-触发器模式无需写 JS，加上 `data-modal-anchor="true"` 即可：
+`placement: 'center'` 会让弹窗最终停在屏幕中间，但动画仍从按钮位置飞入中间：
+
+```javascript
+modal.open({
+    title: '居中弹窗',
+    content: '从按钮位置飞到屏幕中间',
+    anchor: e.currentTarget,
+    placement: 'center'
+});
+```
+
+所有弹窗（包含无锚点的普通弹窗）默认使用新的「边移动边缩放」弹出动画；
+`easing` 可选 `nonlinear`（默认，到位后轻微放大再恢复）或 `linear`（匀速、无回弹）：
+
+```javascript
+modal.open({ title: '线性动画', content: '匀速弹出', easing: 'linear' });
+```
+
+触发器模式无需写 JS，弹窗默认跟随触发按钮定位：
 
 ```html
 <button class="jc-modal-trigger"
-        data-modal-anchor="true"
         data-modal-placement="auto"
         data-modal-content="跟随按钮定位">点击
 </button>
 ```
 
 > 锚定模式下弹窗宽度按内容收缩（受 `size` / `width` 限制），窗口尺寸变化时会自动重新定位。
+> 触发器可用 `data-modal-anchor="false"` 恢复居中显示；`open()` 仅在传入 `anchor` 时才锚定。
 
 ### 行为钩子
 
@@ -361,6 +384,22 @@ modal.open({ title: '暗色', theme: 'dark' });
 // 默认 'auto'：跟随系统 prefers-color-scheme
 ```
 
+### 启用 lolilota 主题（特殊参数）
+
+在 `html` 或 `body` 上设置特殊参数，即可让弹窗 UI 完全使用 `src/less` 编译出的整站主题：
+
+```html
+<html data-lolilota-css-start="start_byusi_bei">
+```
+
+启用后：
+
+- 自动注入编译好的整站主题（`<style id="jcLolilotaStyles">`），并为 `html` 添加 `jc-lolilota-mode`
+- 弹窗视觉完全由 `src/less` 的变量与 `components/_jculayer.less` 覆盖
+- **按钮悬浮效果被禁用**：主题内按钮的 `:hover` 规则在构建期剔除，库自身的悬浮规则也由 `.jc-lolilota-mode` 守卫
+
+也兼容下划线写法 `data-lolilota_css_start="start_byusi_bei"`，可用 `JCuPupw.isLolilotaMode()` 判断当前是否启用。
+
 ## 构建
 
 ```bash
@@ -396,7 +435,7 @@ npm run build
 ## 测试
 
 构建后直接用浏览器打开 [`tests/regression.html`](./tests/regression.html)（需先执行 `npm run build`），
-页面会依次执行 87 项断言并输出 `SUMMARY: 87 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
+页面会依次执行 110 项断言并输出 `SUMMARY: 110 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
 
 - 默认按钮只关闭一次 / `close` 防重入
 - `prompt` `validate` 失败保持打开（点击确定与原生表单回车两条路径）
@@ -409,6 +448,10 @@ npm run build
 - `destroy` 清理与 Promise 兜底
 - 拖拽与打开动画互不覆盖（独立 `translate` 属性）
 - 锚定定位：跟随触发元素、方向翻转、水平居中与关闭后样式清理
+- 从按钮位置弹出的入场/退场动画（含 `center` 居中飞入模式）
+- 指定方向空间不足时的自动翻转（如 `left` 翻转到 `right`）
+- `linear` / `nonlinear` 动画时间曲线（非线性到位后有轻微放大的回弹）
+- `lolilota_css_start` 特殊参数的主题注入、模式类与按钮悬浮禁用
 
 同时覆盖原生 `<dialog>` 的模态状态、焦点圈禁与焦点还原、顶层堆叠、`cancel` 事件、遮罩关闭以及队列模式。
 
@@ -425,7 +468,8 @@ msedge --headless=new --disable-gpu --virtual-time-budget=90000 \
 JCuPupw/
 ├── src/
 │   ├── jcupupw.js      # 核心库源码（ESM）
-│   └── jcupupw.css     # 弹窗样式
+│   ├── styles/         # 弹窗样式（LESS 拆分，构建期编译为字符串内联）
+│   └── less/           # lolilota 整站主题（特殊参数启用时注入）
 ├── dist/               # 构建产物（UMD/ESM/CJS）
 ├── examples/
 │   └── index.html      # 演示页面

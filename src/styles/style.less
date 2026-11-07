@@ -1,0 +1,30 @@
+// =============================================================================
+// JCuPupw · 样式入口
+//
+// 由 rollup 的 less-strings 插件编译为字符串并内联进 JS 产物，
+// 运行时注入 <style id="jcPupwStyles">，不额外产出 CSS 文件。
+//
+// 目录约定（下划线开头的局部文件只供 @import）：
+//   _variables.less   设计令牌（颜色、尺寸、动效）
+//   _mixins.less      可复用混入
+//   _base.less        重置、滚动锁、遮罩
+//   _container.less   容器、尺寸、锚定、拖拽
+//   _content.less     标题、正文、操作区、表单
+//   _actions.less     按钮与关闭按钮（悬浮效果由 lolilota 模式开关）
+//   _feedback.less    加载态、Spinner、Toast
+//   _animations.less  弹出 / 关闭 / 错峰入场动画
+//   _theme.less       深色与显式主题
+//   _responsive.less  响应式与减弱动效
+// =============================================================================
+
+@import "_variables.less";
+@import "_mixins.less";
+
+@import "_base.less";
+@import "_container.less";
+@import "_content.less";
+@import "_actions.less";
+@import "_feedback.less";
+@import "_animations.less";
+@import "_theme.less";
+@import "_responsive.less";

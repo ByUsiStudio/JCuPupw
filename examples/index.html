@@ -182,13 +182,31 @@
         </div>
 
         <div class="demo-section">
-            <h2>跟随按钮位置弹出（锚定定位）</h2>
+            <h2>从按钮位置弹出（锚定 / 居中飞入）</h2>
             <p style="color:#666; margin-bottom:12px; font-size:14px;">
-                传入 <code>anchor</code>（或给触发器加 <code>data-modal-anchor="true"</code>）后，弹窗会出现在触发按钮旁边；
-                <code>placement</code> 默认 <code>auto</code>，下方空间不足时自动翻转到上方，并始终保持在视口内。
+                传入 <code>anchor</code>（或直接使用触发器）后，弹窗入场动画会从按钮中心出发、边移动边放大；
+                <code>placement</code> 默认 <code>auto</code> 停在按钮旁，设为 <code>center</code> 则飞到屏幕中间。
+                动画默认使用 <code>nonlinear</code> 弹性曲线，可通过 <code>easing="linear"</code> 切换为匀速。
             </p>
             <div class="demo-grid">
                 <button class="demo-btn demo-btn--primary" id="btn-anchor-api">API 锚定（anchor）</button>
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-placement="center"
+                        data-modal-title="居中飞入"
+                        data-modal-content="placement: center —— 最终停在屏幕中间，动画从按钮位置飞入。"
+                        data-modal-size="sm"
+                        data-modal-buttons='[{"text":"知道了","type":"primary"}]'>
+                    居中飞入（center）
+                </button>
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-placement="center"
+                        data-modal-easing="linear"
+                        data-modal-title="线性动画"
+                        data-modal-content="easing: linear —— 匀速飞入与缩放，没有弹性回弹。"
+                        data-modal-size="sm"
+                        data-modal-buttons='[{"text":"关闭","type":"default"}]'>
+                    线性动画（linear）
+                </button>
                 <button class="demo-btn jc-modal-trigger"
                         data-modal-anchor="true"
                         data-modal-title="自动定位"

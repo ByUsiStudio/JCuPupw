@@ -1,0 +1,36 @@
+// =============================================================================
+// JCuPupw · 响应式与减弱动效
+// =============================================================================
+
+@media (max-width: 480px) {
+    .jc-modal__container {
+        margin: 10vh auto;
+        padding: 16px;
+    }
+
+    .jc-modal__title {
+        font-size: 20px;
+    }
+
+    .jc-modal__content {
+        font-size: 14px;
+    }
+
+    .jc-modal__button {
+        padding: 10px 20px;
+    }
+}
+
+// 系统开启「减弱动态效果」时关闭弹出动画，仅保留基础显隐
+@media (prefers-reduced-motion: reduce) {
+    .jc-modal__container,
+    .jc-modal__overlay,
+    .jc-modal__title,
+    .jc-modal__content,
+    .jc-modal__actions,
+    .jc-spinner,
+    .jc-toast {
+        animation: none !important;
+        transition: none !important;
+    }
+}

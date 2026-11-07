@@ -1,0 +1,76 @@
+// =============================================================================
+// JCuPupw · 按钮与关闭按钮
+// 悬浮效果统一由 .jc-button-hover() 包裹：
+// lolilota 模式（html.jc-lolilota-mode）下完全禁用，保持静态外观。
+// =============================================================================
+
+.jc-modal__button {
+    background: var(--jc-primary);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--jc-transition);
+    flex: 1 1 auto;
+    margin: 4px;
+
+    .jc-button-hover({
+        background: var(--jc-primary-hover);
+        transform: translateY(-2px);
+    });
+}
+
+.jc-modal__button:active {
+    transform: translateY(0);
+}
+
+.jc-modal__button--default {
+    background: var(--jc-background);
+    color: var(--jc-text);
+    border: 1px solid var(--jc-border);
+
+    .jc-button-hover({
+        background: var(--jc-border);
+        color: var(--jc-text);
+    });
+}
+
+.jc-modal__button--primary {
+    background: var(--jc-primary);
+    color: #fff;
+    border: none;
+
+    .jc-button-hover({
+        background: var(--jc-primary-hover);
+    });
+}
+
+.jc-modal__button--danger {
+    background: var(--jc-danger);
+
+    .jc-button-hover({
+        background: var(--jc-danger-hover);
+    });
+}
+
+.jc-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--jc-text-light);
+    transition: color .2s ease;
+
+    .jc-button-hover({
+        color: var(--jc-text);
+    });
+}

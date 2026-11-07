@@ -1,0 +1,29 @@
+// =============================================================================
+// JCuPupw · 深色与显式主题
+// =============================================================================
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --jc-text: #fff;
+        --jc-text-light: #ccc;
+        --jc-background: #1e1e1e;
+        --jc-border: #444;
+        --jc-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+    }
+}
+
+.jc-modal[data-theme="light"] {
+    --jc-text: #333;
+    --jc-text-light: #666;
+    --jc-background: #fff;
+    --jc-border: #e0e0e0;
+    --jc-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+}
+
+.jc-modal[data-theme="dark"] {
+    --jc-text: #fff;
+    --jc-text-light: #ccc;
+    --jc-background: #1e1e1e;
+    --jc-border: #444;
+    --jc-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+}

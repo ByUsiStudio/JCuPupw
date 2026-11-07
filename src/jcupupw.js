@@ -1,14 +1,22 @@
-import styles from './jcupupw.css';
+import styles from './styles/style.less';
+import lolilotaStyles from './less/style.less';
 
 const BUTTON_TYPES = new Set(['default', 'primary', 'danger']);
 const SIZE_TYPES = new Set(['sm', 'md', 'lg', 'auto']);
 const INPUT_TYPES = new Set(['text', 'password', 'number', 'email', 'tel', 'url', 'search']);
 const TOAST_TYPES = new Set(['success', 'error', 'warning', 'info']);
-const PLACEMENT_TYPES = new Set(['auto', 'top', 'bottom', 'left', 'right']);
+const PLACEMENT_TYPES = new Set(['auto', 'center', 'top', 'bottom', 'left', 'right']);
 const MIN_VISIBLE_PX = 60;
 const ANCHOR_GAP = 10;
 const VIEWPORT_MARGIN = 8;
 const CLOSE_FALLBACK_MS = 700;
+
+// 特殊参数：HTML 上设置 data-lolilota-css-start="start_byusi_bei"
+// （同时兼容下划线写法 data-lolilota_css_start）时启用整站 lolilota 主题
+const LOLILOTA_ATTR = 'data-lolilota-css-start';
+const LOLILOTA_ATTR_UNDERSCORE = 'data-lolilota_css_start';
+const LOLILOTA_VALUE = 'start_byusi_bei';
+const LOLILOTA_CLASS = 'jc-lolilota-mode';
 
 let idSeed = 0;
 
@@ -18,6 +26,15 @@ const createId = (prefix) => {
 };
 
 const warn = (...args) => console.warn('[JCuPupw]', ...args);
+
+const readLolilotaFlag = (el) =>
+    el?.getAttribute(LOLILOTA_ATTR) || el?.getAttribute(LOLILOTA_ATTR_UNDERSCORE) || '';
+
+const isLolilotaMode = () => {
+    if (typeof document === 'undefined') return false;
+    return [document.documentElement, document.body]
+        .some(el => readLolilotaFlag(el) === LOLILOTA_VALUE);
+};
 
 // anchor 支持元素或 CSS 选择器
 const resolveAnchor = (anchor) => {
@@ -110,11 +127,27 @@ class JCuPupw {
     }
 
     injectStyles() {
-        if (document.getElementById('jcPupwStyles')) return;
-        const style = document.createElement('style');
-        style.id = 'jcPupwStyles';
-        style.textContent = styles;
-        document.head.appendChild(style);
+        if (!document.getElementById('jcPupwStyles')) {
+            const style = document.createElement('style');
+            style.id = 'jcPupwStyles';
+            style.textContent = styles;
+            document.head.appendChild(style);
+        }
+        this._syncLolilotaStyles();
+    }
+
+    // 命中特殊参数时注入整站 lolilota 主题（只注入一次）
+    _syncLolilotaStyles() {
+        if (!isLolilotaMode()) return false;
+
+        document.documentElement.classList.add(LOLILOTA_CLASS);
+        if (!document.getElementById('jcLolilotaStyles')) {
+            const style = document.createElement('style');
+            style.id = 'jcLolilotaStyles';
+            style.textContent = lolilotaStyles;
+            document.head.appendChild(style);
+        }
+        return true;
     }
 
     init() {
@@ -157,13 +190,18 @@ class JCuPupw {
         const theme = trigger.getAttribute('data-modal-theme');
         const draggable = trigger.getAttribute('data-modal-draggable') === 'true';
         const placement = trigger.getAttribute('data-modal-placement');
-        const anchorAttr = trigger.getAttribute('data-modal-anchor');
+        const easing = trigger.getAttribute('data-modal-easing');
         let buttons = null;
 
-        // data-modal-anchor 存在时弹窗跟随触发元素定位；值可为 "true"（按钮自身）或 CSS 选择器
-        const anchor = anchorAttr
-            ? (anchorAttr === 'true' ? trigger : resolveAnchor(anchorAttr) || trigger)
-            : null;
+        // 触发器打开的弹窗默认跟随按钮定位；data-modal-anchor 可填 CSS 选择器改用其它锚点，
+        // 设为 "false" 可回退到传统居中弹窗
+        const anchorAttr = trigger.getAttribute('data-modal-anchor');
+        let anchor = trigger;
+        if (anchorAttr === 'false') {
+            anchor = null;
+        } else if (anchorAttr && anchorAttr !== 'true') {
+            anchor = resolveAnchor(anchorAttr) || trigger;
+        }
 
         const rawButtons = trigger.getAttribute('data-modal-buttons');
         if (rawButtons) {
@@ -175,7 +213,7 @@ class JCuPupw {
             }
         }
 
-        const config = { title, content, size, theme, draggable, placement, anchor };
+        const config = { title, content, size, theme, draggable, placement, easing, anchor };
         if (buttons) {
             config.buttons = buttons.map(btn => ({
                 text: btn?.text,
@@ -197,6 +235,8 @@ class JCuPupw {
             warn('实例已销毁，open() 调用被忽略');
             return Promise.resolve(false);
         }
+        // 允许调用方在实例创建后才设置特殊参数
+        this._syncLolilotaStyles();
         if (!config || typeof config !== 'object') config = { content: config };
 
         // 队列模式：已有其它弹窗在显示时排队，等当前关闭后再打开
@@ -307,8 +347,11 @@ class JCuPupw {
         if (this.container) {
             this.container.classList.remove('jc-modal__container--dragging');
             this.container.classList.remove('jc-modal__container--anchored');
+            this.container.classList.remove('jc-modal__container--from-anchor');
             delete this.container.dataset.placement;
             this.container.style.translate = '';
+            this.container.style.removeProperty('--jc-from-x');
+            this.container.style.removeProperty('--jc-from-y');
             this.container.style.removeProperty('animation');
             this.container.style.removeProperty('will-change');
             this.container.style.left = '';
@@ -381,6 +424,7 @@ class JCuPupw {
             draggable = false,
             anchor,
             placement = 'auto',
+            easing = 'nonlinear',
             autoClose,
             theme = 'auto',
             queue = false
@@ -397,6 +441,7 @@ class JCuPupw {
             draggable,
             anchor,
             placement,
+            easing,
             autoClose,
             theme,
             queue
@@ -405,6 +450,7 @@ class JCuPupw {
         this.setTitle(title);
         this.setContent(content);
         this._applySize(size, width);
+        this._applyEasing(easing);
         this._applyTheme(theme);
         this._renderButtons(buttons);
         this._initDrag(draggable);
@@ -433,78 +479,119 @@ class JCuPupw {
         }
     }
 
+    _applyEasing(easing) {
+        if (!this.container) return;
+        this.container.classList.toggle('jc-modal__container--linear', easing === 'linear');
+    }
+
     _applyAnchorPlacement() {
         if (!this.container) return;
 
         const anchor = resolveAnchor(this.config.anchor);
+        const placement = PLACEMENT_TYPES.has(this.config.placement) ? this.config.placement : 'auto';
+
         if (!anchor) {
+            this.container.classList.remove('jc-modal__container--anchored', 'jc-modal__container--from-anchor');
+            delete this.container.dataset.placement;
+            this.container.style.left = '';
+            this.container.style.top = '';
+            this.container.style.removeProperty('--jc-from-x');
+            this.container.style.removeProperty('--jc-from-y');
+            return;
+        }
+
+        // center 模式保持默认居中布局，仅把按钮中心作为入场动画起点
+        if (placement === 'center') {
             this.container.classList.remove('jc-modal__container--anchored');
             delete this.container.dataset.placement;
             this.container.style.left = '';
             this.container.style.top = '';
-            return;
+        } else {
+            // 先切换到锚定布局再测量，保证读到的是收缩后的实际尺寸
+            this.container.classList.add('jc-modal__container--anchored');
         }
-
-        // 先切换到锚定布局再测量，保证读到的是收缩后的实际尺寸
-        this.container.classList.add('jc-modal__container--anchored');
 
         const width = this.container.offsetWidth;
         const height = this.container.offsetHeight;
         if (!width || !height) return;
 
         const rect = anchor.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const space = {
-            top: rect.top - ANCHOR_GAP,
-            bottom: vh - rect.bottom - ANCHOR_GAP,
-            left: rect.left - ANCHOR_GAP,
-            right: vw - rect.right - ANCHOR_GAP
-        };
 
-        let placement = PLACEMENT_TYPES.has(this.config.placement) ? this.config.placement : 'auto';
-        if (placement === 'auto') {
-            if (space.bottom >= height) placement = 'bottom';
-            else if (space.top >= height) placement = 'top';
-            else if (space.right >= width) placement = 'right';
-            else if (space.left >= width) placement = 'left';
-            else {
+        if (placement !== 'center') {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const space = {
+                top: rect.top - ANCHOR_GAP,
+                bottom: vh - rect.bottom - ANCHOR_GAP,
+                left: rect.left - ANCHOR_GAP,
+                right: vw - rect.right - ANCHOR_GAP
+            };
+
+            const fit = {
+                top: space.top >= height,
+                bottom: space.bottom >= height,
+                left: space.left >= width,
+                right: space.right >= width
+            };
+            const opposite = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+            const chooseAuto = () => {
+                if (fit.bottom) return 'bottom';
+                if (fit.top) return 'top';
+                if (fit.right) return 'right';
+                if (fit.left) return 'left';
                 // 四周都放不下时选择空间更大的一侧，随后由边界收敛保证可见
                 const vertical = space.bottom >= space.top ? ['bottom', space.bottom] : ['top', space.top];
                 const horizontal = space.right >= space.left ? ['right', space.right] : ['left', space.left];
-                placement = vertical[1] >= horizontal[1] ? vertical[0] : horizontal[0];
+                return vertical[1] >= horizontal[1] ? vertical[0] : horizontal[0];
+            };
+
+            let direction = placement;
+            if (direction === 'auto') {
+                direction = chooseAuto();
+            } else if (!fit[direction]) {
+                // 指定方向放不下时先翻转到反方向，仍放不下再按 auto 选择最佳方向
+                direction = fit[opposite[direction]] ? opposite[direction] : chooseAuto();
             }
+
+            let left;
+            let top;
+            switch (direction) {
+                case 'top':
+                    top = rect.top - ANCHOR_GAP - height;
+                    left = rect.left + rect.width / 2 - width / 2;
+                    break;
+                case 'left':
+                    left = rect.left - ANCHOR_GAP - width;
+                    top = rect.top + rect.height / 2 - height / 2;
+                    break;
+                case 'right':
+                    left = rect.right + ANCHOR_GAP;
+                    top = rect.top + rect.height / 2 - height / 2;
+                    break;
+                default:
+                    top = rect.bottom + ANCHOR_GAP;
+                    left = rect.left + rect.width / 2 - width / 2;
+            }
+
+            // 边界收敛：至少保留 VIEWPORT_MARGIN，避免弹窗被裁出视口
+            const maxLeft = Math.max(VIEWPORT_MARGIN, vw - width - VIEWPORT_MARGIN);
+            const maxTop = Math.max(VIEWPORT_MARGIN, vh - height - VIEWPORT_MARGIN);
+            left = Math.min(Math.max(left, VIEWPORT_MARGIN), maxLeft);
+            top = Math.min(Math.max(top, VIEWPORT_MARGIN), maxTop);
+
+            this.container.dataset.placement = direction;
+            this.container.style.left = `${Math.round(left)}px`;
+            this.container.style.top = `${Math.round(top)}px`;
         }
 
-        let left;
-        let top;
-        switch (placement) {
-            case 'top':
-                top = rect.top - ANCHOR_GAP - height;
-                left = rect.left + rect.width / 2 - width / 2;
-                break;
-            case 'left':
-                left = rect.left - ANCHOR_GAP - width;
-                top = rect.top + rect.height / 2 - height / 2;
-                break;
-            case 'right':
-                left = rect.right + ANCHOR_GAP;
-                top = rect.top + rect.height / 2 - height / 2;
-                break;
-            default:
-                top = rect.bottom + ANCHOR_GAP;
-                left = rect.left + rect.width / 2 - width / 2;
-        }
-
-        // 边界收敛：至少保留 VIEWPORT_MARGIN，避免弹窗被裁出视口
-        const maxLeft = Math.max(VIEWPORT_MARGIN, vw - width - VIEWPORT_MARGIN);
-        const maxTop = Math.max(VIEWPORT_MARGIN, vh - height - VIEWPORT_MARGIN);
-        left = Math.min(Math.max(left, VIEWPORT_MARGIN), maxLeft);
-        top = Math.min(Math.max(top, VIEWPORT_MARGIN), maxTop);
-
-        this.container.dataset.placement = placement;
-        this.container.style.left = `${Math.round(left)}px`;
-        this.container.style.top = `${Math.round(top)}px`;
+        // 入场动画从按钮中心出发：记录按钮中心到弹窗最终中心的偏移
+        this.container.classList.add('jc-modal__container--from-anchor');
+        const centerX = this.container.offsetLeft + width / 2;
+        const centerY = this.container.offsetTop + height / 2;
+        const dx = rect.left + rect.width / 2 - centerX;
+        const dy = rect.top + rect.height / 2 - centerY;
+        this.container.style.setProperty('--jc-from-x', `${Math.round(dx)}px`);
+        this.container.style.setProperty('--jc-from-y', `${Math.round(dy)}px`);
     }
 
     _applyTheme(theme) {
@@ -875,6 +962,8 @@ class JCuPupw {
     }
 
     static instance() { return JCuPupw._getSingleton(); }
+
+    static isLolilotaMode() { return isLolilotaMode(); }
 
     static intercept() {
         if (JCuPupw._intercepted) return JCuPupw._restore;
