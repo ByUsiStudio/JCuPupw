@@ -285,19 +285,34 @@ html:has(dialog.jc-modal[open]) {
 }
 
 .jc-modal__container--sm {
+    --jc-max-width: 320px;
     max-width: 320px;
 }
 
 .jc-modal__container--md {
+    --jc-max-width: 500px;
     max-width: 500px;
 }
 
 .jc-modal__container--lg {
+    --jc-max-width: 800px;
     max-width: 800px;
 }
 
 .jc-modal__container--auto {
+    --jc-max-width: 90%;
     max-width: 90%;
+}
+
+/* 锚定模式：由 JS 写入 left/top，按触发元素位置收缩为气泡尺寸 */
+.jc-modal__container--anchored {
+    position: absolute;
+    width: max-content;
+    min-width: 200px;
+    max-width: min(var(--jc-max-width, 500px), calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    margin: 0;
+    overflow-y: auto;
 }
 
 .jc-modal__title--draggable {

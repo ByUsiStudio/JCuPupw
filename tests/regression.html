@@ -386,6 +386,57 @@ async function flush(ms = 40) { await sleep(ms); }
         check('extra: clearToasts removes container', !document.getElementById('jcToastContainer'));
     })();
 
+    /* ===== 附加：锚定触发元素定位 ===== */
+    await (async () => {
+        const host = document.getElementById('host');
+        const opener = document.createElement('button');
+        opener.textContent = 'anchor opener';
+        opener.style.cssText = 'position:fixed;left:50%;top:200px;';
+        document.body.appendChild(opener);
+
+        const m = new JCuPupw({ id: 't16' });
+        await m.open({ content: 'x', anchor: opener, placement: 'bottom' });
+        await flush(60);
+        const rect = opener.getBoundingClientRect();
+        const width = m.container.offsetWidth;
+        const height = m.container.offsetHeight;
+        const top = parseFloat(m.container.style.top);
+        const left = parseFloat(m.container.style.left);
+        check('anchor: container switches to anchored layout', m.container.classList.contains('jc-modal__container--anchored'));
+        check('anchor: opens below the trigger with 10px gap', Math.abs(top - (rect.bottom + 10)) <= 1, `top=${top} expected=${rect.bottom + 10}`);
+        check('anchor: horizontally centered on the trigger', Math.abs(left - (rect.left + rect.width / 2 - width / 2)) <= 1, `left=${left}`);
+        check('anchor: placement recorded on container', m.container.dataset.placement === 'bottom');
+        check('anchor: vertical space fits without clamping', top + height <= window.innerHeight - 8);
+
+        await m.open({ content: 'x', anchor: opener, placement: 'auto' });
+        await flush(40);
+        check('anchor: auto placement keeps bottom when space is available', m.container.dataset.placement === 'bottom');
+
+        // 靠底部的触发器没有下方空间，auto 应翻转到上方
+        opener.style.top = 'calc(100vh - 40px)';
+        await m.open({ content: 'x', anchor: opener, placement: 'auto' });
+        await flush(40);
+        const bottomRect = opener.getBoundingClientRect();
+        check('anchor: auto flips to top near viewport bottom', m.container.dataset.placement === 'top', m.container.dataset.placement);
+        check('anchor: flipped top edge sits above the trigger', Math.abs(parseFloat(m.container.style.top) - (bottomRect.top - 10 - m.container.offsetHeight)) <= 1);
+
+        await m.close();
+        await sleep(900);
+        check('anchor: class and inline position cleared after close', !m.container.classList.contains('jc-modal__container--anchored') && m.container.style.left === '' && m.container.style.top === '');
+        m.destroy();
+
+        // 触发器模式：data-modal-anchor="true" 使用按钮自身作为锚点
+        host.innerHTML = '<button class="jc-modal-trigger" data-modal-anchor="true" data-modal-content="anchored">触发</button>';
+        click(host.querySelector('button'));
+        await flush(60);
+        const single = JCuPupw.instance();
+        check('anchor: trigger mode anchors to the trigger itself', single.container.classList.contains('jc-modal__container--anchored') && !!single.container.dataset.placement);
+        await single.close();
+        await sleep(900);
+        host.innerHTML = '';
+        opener.remove();
+    })();
+
     /* ===== 汇总 ===== */
     const failed = results.filter(r => r.startsWith('FAIL'));
     results.push('');

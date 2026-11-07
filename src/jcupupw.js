@@ -4,7 +4,10 @@ const BUTTON_TYPES = new Set(['default', 'primary', 'danger']);
 const SIZE_TYPES = new Set(['sm', 'md', 'lg', 'auto']);
 const INPUT_TYPES = new Set(['text', 'password', 'number', 'email', 'tel', 'url', 'search']);
 const TOAST_TYPES = new Set(['success', 'error', 'warning', 'info']);
+const PLACEMENT_TYPES = new Set(['auto', 'top', 'bottom', 'left', 'right']);
 const MIN_VISIBLE_PX = 60;
+const ANCHOR_GAP = 10;
+const VIEWPORT_MARGIN = 8;
 const CLOSE_FALLBACK_MS = 700;
 
 let idSeed = 0;
@@ -15,6 +18,21 @@ const createId = (prefix) => {
 };
 
 const warn = (...args) => console.warn('[JCuPupw]', ...args);
+
+// anchor 支持元素或 CSS 选择器
+const resolveAnchor = (anchor) => {
+    if (!anchor) return null;
+    if (typeof anchor === 'string') {
+        try {
+            return document.querySelector(anchor);
+        } catch (e) {
+            warn(`anchor 选择器 "${anchor}" 无效，已忽略:`, e);
+            return null;
+        }
+    }
+    if (typeof anchor.getBoundingClientRect === 'function') return anchor;
+    return null;
+};
 
 class JCuPupw {
     static _instances = new Set();
@@ -121,6 +139,11 @@ class JCuPupw {
         });
 
         JCuPupw._ensureTriggerDelegation();
+
+        // 视口尺寸变化时重新计算锚定位置
+        this._listen(window, 'resize', () => {
+            if (this.isOpen() && this.config.anchor) this._applyAnchorPlacement();
+        });
     }
 
     _listen(target, type, handler, options = {}) {
@@ -133,7 +156,14 @@ class JCuPupw {
         const size = trigger.getAttribute('data-modal-size');
         const theme = trigger.getAttribute('data-modal-theme');
         const draggable = trigger.getAttribute('data-modal-draggable') === 'true';
+        const placement = trigger.getAttribute('data-modal-placement');
+        const anchorAttr = trigger.getAttribute('data-modal-anchor');
         let buttons = null;
+
+        // data-modal-anchor 存在时弹窗跟随触发元素定位；值可为 "true"（按钮自身）或 CSS 选择器
+        const anchor = anchorAttr
+            ? (anchorAttr === 'true' ? trigger : resolveAnchor(anchorAttr) || trigger)
+            : null;
 
         const rawButtons = trigger.getAttribute('data-modal-buttons');
         if (rawButtons) {
@@ -145,7 +175,7 @@ class JCuPupw {
             }
         }
 
-        const config = { title, content, size, theme, draggable };
+        const config = { title, content, size, theme, draggable, placement, anchor };
         if (buttons) {
             config.buttons = buttons.map(btn => ({
                 text: btn?.text,
@@ -213,6 +243,9 @@ class JCuPupw {
 
             if (this.config.queue) JCuPupw._showing = this;
 
+            // 弹窗已渲染后再测量尺寸，按触发元素位置做自动翻转与边界收敛
+            this._applyAnchorPlacement();
+
             this._clearAutoClose();
             const { autoClose } = this.config;
             if (typeof autoClose === 'number' && autoClose > 0) {
@@ -273,6 +306,8 @@ class JCuPupw {
         this._dragOffset = { x: 0, y: 0 };
         if (this.container) {
             this.container.classList.remove('jc-modal__container--dragging');
+            this.container.classList.remove('jc-modal__container--anchored');
+            delete this.container.dataset.placement;
             this.container.style.translate = '';
             this.container.style.removeProperty('animation');
             this.container.style.removeProperty('will-change');
@@ -344,6 +379,8 @@ class JCuPupw {
             size,
             width,
             draggable = false,
+            anchor,
+            placement = 'auto',
             autoClose,
             theme = 'auto',
             queue = false
@@ -358,6 +395,8 @@ class JCuPupw {
             size,
             width,
             draggable,
+            anchor,
+            placement,
             autoClose,
             theme,
             queue
@@ -392,6 +431,80 @@ class JCuPupw {
         if (width) {
             this.container.style.maxWidth = typeof width === 'number' ? `${width}px` : width;
         }
+    }
+
+    _applyAnchorPlacement() {
+        if (!this.container) return;
+
+        const anchor = resolveAnchor(this.config.anchor);
+        if (!anchor) {
+            this.container.classList.remove('jc-modal__container--anchored');
+            delete this.container.dataset.placement;
+            this.container.style.left = '';
+            this.container.style.top = '';
+            return;
+        }
+
+        // 先切换到锚定布局再测量，保证读到的是收缩后的实际尺寸
+        this.container.classList.add('jc-modal__container--anchored');
+
+        const width = this.container.offsetWidth;
+        const height = this.container.offsetHeight;
+        if (!width || !height) return;
+
+        const rect = anchor.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const space = {
+            top: rect.top - ANCHOR_GAP,
+            bottom: vh - rect.bottom - ANCHOR_GAP,
+            left: rect.left - ANCHOR_GAP,
+            right: vw - rect.right - ANCHOR_GAP
+        };
+
+        let placement = PLACEMENT_TYPES.has(this.config.placement) ? this.config.placement : 'auto';
+        if (placement === 'auto') {
+            if (space.bottom >= height) placement = 'bottom';
+            else if (space.top >= height) placement = 'top';
+            else if (space.right >= width) placement = 'right';
+            else if (space.left >= width) placement = 'left';
+            else {
+                // 四周都放不下时选择空间更大的一侧，随后由边界收敛保证可见
+                const vertical = space.bottom >= space.top ? ['bottom', space.bottom] : ['top', space.top];
+                const horizontal = space.right >= space.left ? ['right', space.right] : ['left', space.left];
+                placement = vertical[1] >= horizontal[1] ? vertical[0] : horizontal[0];
+            }
+        }
+
+        let left;
+        let top;
+        switch (placement) {
+            case 'top':
+                top = rect.top - ANCHOR_GAP - height;
+                left = rect.left + rect.width / 2 - width / 2;
+                break;
+            case 'left':
+                left = rect.left - ANCHOR_GAP - width;
+                top = rect.top + rect.height / 2 - height / 2;
+                break;
+            case 'right':
+                left = rect.right + ANCHOR_GAP;
+                top = rect.top + rect.height / 2 - height / 2;
+                break;
+            default:
+                top = rect.bottom + ANCHOR_GAP;
+                left = rect.left + rect.width / 2 - width / 2;
+        }
+
+        // 边界收敛：至少保留 VIEWPORT_MARGIN，避免弹窗被裁出视口
+        const maxLeft = Math.max(VIEWPORT_MARGIN, vw - width - VIEWPORT_MARGIN);
+        const maxTop = Math.max(VIEWPORT_MARGIN, vh - height - VIEWPORT_MARGIN);
+        left = Math.min(Math.max(left, VIEWPORT_MARGIN), maxLeft);
+        top = Math.min(Math.max(top, VIEWPORT_MARGIN), maxTop);
+
+        this.container.dataset.placement = placement;
+        this.container.style.left = `${Math.round(left)}px`;
+        this.container.style.top = `${Math.round(top)}px`;
     }
 
     _applyTheme(theme) {
