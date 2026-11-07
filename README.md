@@ -409,7 +409,7 @@ npm run build
 | `jcupupw.esm.js` | ESM | 现代打包工具 `import` |
 | `jcupupw.cjs` | CommonJS | Node.js `require` |
 
-每个产物顶部均包含版权声明、仓库地址、作者信息、许可证类型（AGPL-3.0）和唯一构建 UUID。
+每个产物顶部均包含版权声明、仓库地址、作者信息、许可证类型（MIT）和唯一构建 UUID。
 
 ## 浏览器兼容
 
@@ -483,4 +483,6 @@ JCuPupw/
 
 ## 许可证
 
-本项目基于 [AGPL-3.0](/LICENSE) 许可开源。
+本项目基于 [MIT](/LICENSE) 许可开源。
+
+AGPL-3.0 授权文本保留在 [LICENSE-AGPL](/LICENSE-AGPL)，适用于此前以 AGPL-3.0 发布的版本。

@@ -43,7 +43,7 @@ const banner = `/*!
  *   - https://codeberg.org/ByUsiStudio/JCuPupw
  *
  * Author: 北啊呢 <177828525@qq.com> (ByUsiStudio)
- * License: AGPL-3.0-or-later
+ * License: MIT
  * Build: ${buildDate}
  * Build ID: ${buildId}
  */
