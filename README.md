@@ -489,8 +489,8 @@ JCuPupw/
 
 ## 作者
 
-北啊呢 \<177828525@qq.com\> — ByUsi Studio
+北啊呢 177828525@qq.com — ByUsi Studio
 
 ## 许可证
 
-本项目基于 [AGPL-3.0-or-later](./LICENSE) 许可开源。
+本项目基于 [AGPL-3.0](/LICENSE) 许可开源。
