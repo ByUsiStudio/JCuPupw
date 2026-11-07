@@ -1,26 +1,26 @@
 # JCuPupw
 
-轻量级浏览器弹窗（Modal / Dialog）库，支持自动注入 DOM 与样式，无需预置 HTML 结构。
+JCuPupw 是一个轻量级浏览器弹窗库，基于原生 `<dialog>`，运行时没有外部依赖。它会在需要时创建 DOM 和样式，页面不必预先写好弹窗结构。
 
 ## 特性
 
-- **零依赖，轻量级** — 纯原生 JavaScript 实现
-- **自动注入 CSS** — 打开即用，无需手动引入样式
-- **主题切换** — 支持 `light` / `dark` / `auto`（跟随系统）
-- **多格式产物** — UMD / ESM / CommonJS
-- **Promise 化 API** — 所有操作均为异步，基于 `Promise`
-- **触发器模式** — `data-*` 属性 + 事件委托自动绑定，支持动态元素与多实例指定
-- **锚定定位** — 弹窗可跟随触发按钮弹出，`auto` 自动翻转并保持在视口内
-- **安全渲染** — 按钮文本、`placeholder`、`defaultValue` 等按纯文本/属性处理，避免 XSS
-- **快捷方法** — 内置 `alert` / `confirm` / `prompt` / `toast`
-- **流畅拖拽** — GPU 加速的弹窗拖拽，支持多次拖拽累积偏移
-- **尺寸控制** — 预设 `sm` / `md` / `lg` / `auto` 或自定义宽度
-- **多弹窗管理** — 默认堆叠显示，支持队列模式依次展示
-- **行为钩子** — `beforeClose` 拦截、`autoClose` 自动关闭等
-- **无障碍支持** — 基于原生 `<dialog>`：焦点圈禁、页面 `inert`、Esc 关闭与焦点还原均由浏览器提供
-- **原生能力优先** — CSS `:has()` 滚动锁、CSS `translate` 拖拽、原生 `<form>` 回车提交，减少 JS 逻辑
-- **移动端适配** — 响应式设计，触摸友好
-- **原生弹窗接管** — 一键替换 `window.alert`/`confirm`/`prompt`
+- 纯原生 JavaScript，无运行时依赖
+- 打开弹窗时自动注入 DOM 与 CSS，无需预置 HTML
+- 支持 `light`、`dark`、`auto` 三种主题，`auto` 跟随系统
+- 提供 UMD、ESM、CommonJS 三种产物
+- 所有 API 基于 Promise
+- 触发器使用 `data-*` 属性和事件委托，动态插入的元素也能生效，可用 `data-modal-target` 指定实例
+- 弹窗可以跟随触发按钮定位，`auto` 模式下自动翻转并保持在视口内
+- 按钮文字、`placeholder`、`defaultValue` 等按纯文本或属性处理，避免 XSS
+- 内置 `alert`、`confirm`、`prompt`、`toast`
+- 拖拽使用 GPU 加速，多次拖拽会累积偏移
+- 尺寸可选 `sm`、`md`、`lg`、`auto`，也可以传入自定义宽度
+- 多个弹窗默认堆叠显示，`queue` 模式可以依次展示
+- 提供 `beforeClose`、`autoClose` 等行为钩子
+- 基于原生 `<dialog>`，焦点圈禁、页面 `inert`、Esc 关闭和焦点还原由浏览器处理
+- 滚动锁使用 CSS `:has()`，拖拽使用 CSS `translate`，表单回车提交交给原生 `<form>`
+- 移动端有响应式布局，触摸操作可用
+- 调用 `JCuPupw.intercept()` 可以接管 `window.alert`、`confirm`、`prompt`
 
 ## 快速上手
 
@@ -88,8 +88,7 @@ const modal = new JCuPupw();
 
 ### 触发器模式（零 JS 代码）
 
-给元素添加 `.jc-modal-trigger` 类和 `data-modal-*` 属性即可自动绑定。触发器基于 `document` 事件委托实现，
-动态插入的元素同样生效：
+在元素上添加 `.jc-modal-trigger` 和 `data-modal-*` 属性，库会通过 `document` 上的事件委托自动绑定，动态插入的元素也有效。
 
 ```html
 <button class="jc-modal-trigger"
@@ -106,14 +105,11 @@ const modal = new JCuPupw();
 </button>
 ```
 
-- `data-modal-target`：指定由哪个实例打开（值需与构造函数的 `id` 一致）。省略时使用全局单例。
-  若指定的 id 尚无活跃实例，会自动创建一个。
-- `data-modal-buttons`：JSON 数组，字段与 `buttons` 配置相同。
-- `data-modal-anchor`：触发器打开的弹窗默认跟随按钮定位。设为 `"false"` 回退到居中弹窗；
-  也可填 CSS 选择器，改用页面上的其它元素作为锚点。
-- `data-modal-placement`：`auto` / `center` / `top` / `bottom` / `left` / `right`，默认 `auto`。
-  `center` 表示弹窗最终居中，但入场动画仍从按钮位置放大飞入。
-- `data-modal-easing`：`nonlinear`（默认，弹性）或 `linear`（匀速）。
+- `data-modal-target` 指定由哪个实例打开，值需要和构造函数的 `id` 一致。省略时使用全局单例；如果这个 id 还没有活跃实例，库会自动创建一个。
+- `data-modal-buttons` 接收 JSON 数组，字段与 `buttons` 配置相同。
+- `data-modal-anchor` 控制锚点。触发器打开的弹窗默认跟随按钮定位；设为 `"false"` 时回到居中弹窗，也可以填 CSS 选择器改用页面上的其它元素。
+- `data-modal-placement` 接受 `auto`、`center`、`top`、`bottom`、`left`、`right`，默认 `auto`。`center` 表示弹窗最终居中，入场动画仍从按钮位置放大飞入。
+- `data-modal-easing` 接受 `nonlinear`（默认，带弹性）或 `linear`（匀速）。
 
 ## API 参考
 
@@ -137,7 +133,7 @@ new JCuPupw(options?)
 
 打开弹窗，这是核心方法。
 
-**config 选项：**
+config 选项：
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
@@ -159,10 +155,9 @@ new JCuPupw(options?)
 | `onOpen` | `Function` | - | 打开完成回调 |
 | `onClose` | `Function` | - | 关闭完成回调 |
 
-> `content` 会作为 HTML 渲染（与 `innerHTML` 一致）。按钮文字、标题、`placeholder` 等其余字段按纯文本处理；
-> 若 `content` 来自用户输入，请自行转义或传入纯文本 DOM 节点（`textContent`）。
+> `content` 按 HTML 渲染，等同 `innerHTML`。按钮文字、标题、`placeholder` 等字段按纯文本处理。如果 `content` 来自用户输入，请自行转义，或传入使用 `textContent` 的 DOM 节点。
 
-**按钮对象结构：**
+按钮对象结构：
 
 ```typescript
 {
@@ -186,7 +181,7 @@ new JCuPupw(options?)
 | `modal.prompt(config)` | `Promise<string \| null>` | 带输入框对话框，返回输入值或 `null` |
 | `modal.toast(config)` | `{ close, el }` | 非模态 Toast 通知 |
 
-**config 示例：**
+config 示例：
 
 ```javascript
 // confirm
@@ -256,7 +251,7 @@ modal.toast({
 
 ### 原生弹窗接管
 
-一键将项目中所有原生 `alert`/`confirm`/`prompt` 替换为 JCuPupw 渲染的弹窗：
+调用 `JCuPupw.intercept()` 后，项目里的 `window.alert`、`confirm`、`prompt` 会改用 JCuPupw 渲染的弹窗。
 
 ```javascript
 // 启用接管
@@ -271,11 +266,11 @@ const val = await window.prompt('输入：');  // → Promise<string|null>
 JCuPupw.restore();
 ```
 
-> **重要提示**：原生 `confirm`/`prompt` 是**同步阻塞**的，而 JCuPupw 是异步的。接管后 `window.confirm()` 和 `window.prompt()` 将返回 **Promise**，调用方必须使用 `await` 或 `.then()`。**接管后原有同步写法（如 `if (confirm('...'))`，Promise 恒为真值）不再兼容**，首次接管会在控制台给出警告。
+> 原生的 `confirm` 和 `prompt` 会同步阻塞，JCuPupw 是异步的。接管后 `window.confirm()` 和 `window.prompt()` 返回 Promise，调用方需要 `await` 或 `.then()`。原有的同步写法（例如 `if (confirm('...'))`）不再兼容，因为 Promise 恒为真值。第一次接管时控制台会给出警告。
 
 `restore()` 会把接管前保存的原生 `alert`/`confirm`/`prompt` 引用原样还原，不会删除 `window` 上的属性。
 
-**降级保护**：如果 JCuPupw 内部发生错误，不会调用原生方法（避免浏览器阻塞），而是返回安全默认值（`alert` → `undefined`，`confirm` → `false`，`prompt` → `null`）。
+如果 JCuPupw 内部出错，它不会调用原生方法（避免浏览器阻塞），而是返回安全默认值：`alert` 返回 `undefined`，`confirm` 返回 `false`，`prompt` 返回 `null`。
 
 ## 使用示例
 
@@ -292,9 +287,7 @@ modal.open({
 
 ### 锚定到触发按钮
 
-传入 `anchor` 即可让弹窗跟随按钮位置显示；`placement` 默认 `auto`，优先显示在按钮下方，
-空间不足时自动翻转到上方，左右方向同理，最终位置会被限制在视口内。
-入场动画会以按钮中心为起点，移动到目标位置并放大，关闭时再飞回按钮：
+传入 `anchor` 后，弹窗会跟随按钮位置显示。`placement` 默认是 `auto`，优先放在按钮下方；空间不足时会翻到上方，左右方向同理，最终位置限制在视口内。入场动画从按钮中心出发，移动到目标位置并放大，关闭时飞回按钮。
 
 ```javascript
 button.addEventListener('click', (e) => {
@@ -319,14 +312,13 @@ modal.open({
 });
 ```
 
-所有弹窗（包含无锚点的普通弹窗）默认使用新的「边移动边缩放」弹出动画；
-`easing` 可选 `nonlinear`（默认，到位后轻微放大再恢复）或 `linear`（匀速、无回弹）：
+所有弹窗都使用边移动边缩放的弹出动画，没有锚点的普通弹窗也一样。`easing` 可选 `nonlinear`（默认，到位后轻微放大再恢复）或 `linear`（匀速，无回弹）。
 
 ```javascript
 modal.open({ title: '线性动画', content: '匀速弹出', easing: 'linear' });
 ```
 
-触发器模式无需写 JS，弹窗默认跟随触发按钮定位：
+触发器模式不用写 JS，弹窗默认跟随触发按钮定位。
 
 ```html
 <button class="jc-modal-trigger"
@@ -335,8 +327,7 @@ modal.open({ title: '线性动画', content: '匀速弹出', easing: 'linear' })
 </button>
 ```
 
-> 锚定模式下弹窗宽度按内容收缩（受 `size` / `width` 限制），窗口尺寸变化时会自动重新定位。
-> 触发器可用 `data-modal-anchor="false"` 恢复居中显示；`open()` 仅在传入 `anchor` 时才锚定。
+> 锚定模式下弹窗宽度按内容收缩，并受 `size` / `width` 限制。窗口尺寸变化时会重新定位。触发器可以用 `data-modal-anchor="false"` 回到居中显示；`open()` 只在传入 `anchor` 时才锚定。
 
 ### 行为钩子
 
@@ -386,19 +377,19 @@ modal.open({ title: '暗色', theme: 'dark' });
 
 ### 启用 lolilota 主题（特殊参数）
 
-在 `html` 或 `body` 上设置特殊参数，即可让弹窗 UI 完全使用 `src/less` 编译出的整站主题：
+在 `html` 或 `body` 上设置特殊参数后，弹窗 UI 会完全使用 `src/less` 编译出的整站主题：
 
 ```html
 <html data-lolilota-css-start="start_byusi_bei">
 ```
 
-启用后：
+此时库会做三件事：
 
-- 自动注入编译好的整站主题（`<style id="jcLolilotaStyles">`），并为 `html` 添加 `jc-lolilota-mode`
-- 弹窗视觉完全由 `src/less` 的变量与 `components/_jculayer.less` 覆盖
-- **按钮悬浮效果被禁用**：主题内按钮的 `:hover` 规则在构建期剔除，库自身的悬浮规则也由 `.jc-lolilota-mode` 守卫
+- 注入编译好的整站主题（`<style id="jcLolilotaStyles">`），并给 `html` 添加 `jc-lolilota-mode`
+- 弹窗视觉由 `src/less` 的变量和 `components/_jculayer.less` 覆盖
+- 禁用按钮悬浮效果：主题内按钮的 `:hover` 规则在构建时移除，库自身的悬浮规则由 `.jc-lolilota-mode` 限制
 
-也兼容下划线写法 `data-lolilota_css_start="start_byusi_bei"`，可用 `JCuPupw.isLolilotaMode()` 判断当前是否启用。
+下划线写法 `data-lolilota_css_start="start_byusi_bei"` 同样可用，也可以用 `JCuPupw.isLolilotaMode()` 查询当前是否启用。
 
 ## 构建
 
@@ -422,7 +413,7 @@ npm run build
 
 ## 浏览器兼容
 
-本版本优先使用浏览器原生能力，依赖以下特性：
+JCuPupw 依赖以下浏览器特性：
 
 | 能力 | 用途 | 最低版本 |
 |------|------|----------|
@@ -430,12 +421,11 @@ npm run build
 | CSS `:has()` | 滚动锁（不修改 `body` 内联样式） | Chromium 105 / Firefox 121 / Safari 15.4 |
 | CSS `translate` 独立属性 | 拖拽位移，与动画 `transform` 互不覆盖 | Chromium 104 / Firefox 72 / Safari 14.1 |
 
-综合最低版本：**Chromium 105+ / Firefox 121+ / Safari 15.4+**。
+综合最低版本为 Chromium 105+、Firefox 121+、Safari 15.4+。
 
 ## 测试
 
-构建后直接用浏览器打开 [`tests/regression.html`](./tests/regression.html)（需先执行 `npm run build`），
-页面会依次执行 115 项断言并输出 `SUMMARY: 115 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
+先执行 `npm run build`，然后在浏览器中打开 [`tests/regression.html`](./tests/regression.html)。页面会执行 115 项断言，并输出 `SUMMARY: 115 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
 
 - 默认按钮只关闭一次 / `close` 防重入
 - `prompt` `validate` 失败保持打开（点击确定与原生表单回车两条路径）
@@ -453,7 +443,7 @@ npm run build
 - `linear` / `nonlinear` 动画时间曲线（非线性到位后有轻微放大的回弹）
 - `lolilota_css_start` 特殊参数的主题注入、模式类与按钮悬浮禁用
 
-同时覆盖原生 `<dialog>` 的模态状态、焦点圈禁与焦点还原、顶层堆叠、`cancel` 事件、遮罩关闭以及队列模式。
+测试还覆盖原生 `<dialog>` 的模态状态、焦点圈禁与焦点还原、顶层堆叠、`cancel` 事件、遮罩关闭和队列模式。
 
 也可用无头浏览器执行：
 
@@ -483,13 +473,13 @@ JCuPupw/
 
 ## 仓库
 
-- **Gitee**：<https://gitee.com/byusistudio/jcupupw>
-- **GitHub**：<https://github.com/ByUsiStudio/JCuPupw>
-- **Codeberg**：<https://codeberg.org/ByUsiStudio/JCuPupw>
+- Gitee：https://gitee.com/byusistudio/jcupupw
+- GitHub：https://github.com/ByUsiStudio/JCuPupw
+- Codeberg：https://codeberg.org/ByUsiStudio/JCuPupw
 
 ## 作者
 
-北啊呢 177828525@qq.com — ByUsi Studio
+北啊呢，177828525@qq.com，ByUsi Studio
 
 ## 许可证
 
