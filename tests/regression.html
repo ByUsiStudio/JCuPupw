@@ -478,6 +478,7 @@ async function flush(ms = 40) { await sleep(ms); }
     /* ===== 附加：lolilota_css_start 特殊参数 ===== */
     await (async () => {
         check('lolilota: theme not injected by default', !document.getElementById('jcLolilotaStyles'));
+        check('variables: root design tokens present', getComputedStyle(document.documentElement).getPropertyValue('--jc-primary').trim() === '#3f51b5');
 
         document.documentElement.setAttribute('data-lolilota-css-start', 'start_byusi_bei');
         const m = new JCuPupw({ id: 't17' });
@@ -501,6 +502,16 @@ async function flush(ms = 40) { await sleep(ms); }
         check('lolilota: modal uses theme background token', getComputedStyle(m.container).backgroundColor === expectedBg, getComputedStyle(m.container).backgroundColor);
         check('lolilota: modal title uses theme brand color', getComputedStyle(m.modalTitle).color === expectedTitle, getComputedStyle(m.modalTitle).color);
         check('lolilota: content stagger animation applied', getComputedStyle(m.modalTitle).animationName === 'jc-contentIn', getComputedStyle(m.modalTitle).animationName);
+
+        check('loading: overlay hidden by default', getComputedStyle(m.modalLoading).display === 'none', getComputedStyle(m.modalLoading).display);
+        m.showLoading();
+        await flush(20);
+        const expectedLoading = dark ? 'rgba(30, 39, 64, 0.82)' : 'rgba(253, 254, 255, 0.82)';
+        const expectedSpinner = dark ? 'rgb(143, 179, 224)' : 'rgb(90, 123, 168)';
+        check('loading: overlay shown when active', getComputedStyle(m.modalLoading).display === 'flex', getComputedStyle(m.modalLoading).display);
+        check('lolilota: loading overlay follows theme', getComputedStyle(m.modalLoading).backgroundColor === expectedLoading, getComputedStyle(m.modalLoading).backgroundColor);
+        check('lolilota: spinner ring uses theme brand color', getComputedStyle(m.modal.querySelector('.jc-spinner')).borderTopColor === expectedSpinner, getComputedStyle(m.modal.querySelector('.jc-spinner')).borderTopColor);
+        m.hideLoading();
 
         await m.close();
         await sleep(900);

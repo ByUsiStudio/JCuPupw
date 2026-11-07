@@ -435,7 +435,7 @@ npm run build
 ## 测试
 
 构建后直接用浏览器打开 [`tests/regression.html`](./tests/regression.html)（需先执行 `npm run build`），
-页面会依次执行 110 项断言并输出 `SUMMARY: 110 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
+页面会依次执行 115 项断言并输出 `SUMMARY: 115 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
 
 - 默认按钮只关闭一次 / `close` 防重入
 - `prompt` `validate` 失败保持打开（点击确定与原生表单回车两条路径）

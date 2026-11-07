@@ -15,7 +15,9 @@
 - 修复指定方向空间不足时被裁切/覆盖按钮的问题：`left` / `right` / `top` / `bottom` 放不下会自动翻转到反方向，仍放不下时按最佳方向收敛
 - **样式改用 LESS**：`src/jcupupw.css` 拆分为 `src/styles/*.less`（变量、混入、基础、容器、内容、按钮、反馈、动画、主题、响应式），构建期由 Rollup 编译为字符串内联；新增标题、正文、操作区错峰入场等动画，原有动画名称与 `linear` / `nonlinear` 行为保持不变
 - **lolilota 主题特殊参数**：`html` / `body` 设置 `data-lolilota-css-start="start_byusi_bei"`（兼容 `data-lolilota_css_start`）时，自动注入 `src/less` 编译出的整站主题，并为 `html` 添加 `jc-lolilota-mode`；该模式下按钮悬浮效果被禁用（主题按钮 `:hover` 规则构建期剔除，库自身悬浮规则由模式类守卫）
-- `tests/regression.html` 新增锚定定位、弹出动画与 lolilota 主题断言（共 110 项）
+- `tests/regression.html` 新增锚定定位、弹出动画与 lolilota 主题断言（共 115 项）
+- 修复 LESS 迁移时遗漏 `:root` 设计令牌导致默认弹窗透明、文字/按钮失去配色的问题
+- 修复 `.jc-center()` 混入覆盖 `display:none`、导致加载遮罩和 Spinner 默认常驻并遮挡弹窗内容的问题；加载遮罩与 Spinner 轨道改为主题变量，深色模式下不再出现白底白字
 
 ## [1.1.1] - 2026-11-07
 
