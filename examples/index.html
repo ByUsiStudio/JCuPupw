@@ -412,7 +412,7 @@
             stackModals.forEach((m, i) => {
                 setTimeout(() => m.open({
                     title: `堆叠 ${i + 1}`,
-                    content: `第 ${i + 1} 个弹窗，z-index 自动递增。按 ESC 只关最顶层。`,
+                    content: `第 ${i + 1} 个弹窗，使用原生 dialog 顶层堆叠，后打开的在上层。按 ESC 只关最顶层。`,
                     size: 'sm'
                 }), i * 300);
             });

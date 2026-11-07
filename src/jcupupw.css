@@ -27,14 +27,38 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+/* 原生 <dialog open> 时锁定页面滚动。纯 CSS 实现，无需 JS 记录/恢复 body 内联样式；
+   scrollbar-gutter 预留滚动条宽度，避免打开弹窗时页面横向抖动。 */
+html:has(dialog.jc-modal[open]) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
 .jc-modal {
-    display: none;
+    /* 重置 <dialog> 的 UA 样式，让弹窗铺满视口并保留现有 BEM 结构 */
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    overflow: visible;
     z-index: 1000;
+}
+
+.jc-modal[open] {
+    display: block;
+}
+
+/* 遮罩由 .jc-modal__overlay 负责，隐藏浏览器默认的半透明 backdrop */
+.jc-modal::backdrop {
+    background: transparent;
 }
 
 .jc-modal__overlay {
@@ -77,7 +101,11 @@
 }
 
 .jc-modal--active .jc-modal__container {
-    animation: jc-fadeInUp 0.5s ease-out forwards;
+    /* 不使用 forwards：动画结束后由本规则接管 transform；
+       拖拽使用独立的 translate 属性，不会被动画的 transform 覆盖 */
+    opacity: 1;
+    transform: translateY(0);
+    animation: jc-fadeInUp 0.5s ease-out;
 }
 
 .jc-modal--closing .jc-modal__overlay {
@@ -276,6 +304,16 @@
     cursor: move;
     user-select: none;
     touch-action: none;
+}
+
+/* 拖拽期间关闭过渡，避免每次 pointermove 都触发 0.3s 缓动造成拖影 */
+.jc-modal__container--dragging {
+    transition: none;
+    will-change: transform, translate;
+}
+
+.jc-modal__form {
+    margin: 0;
 }
 
 .jc-modal[data-theme="light"] {

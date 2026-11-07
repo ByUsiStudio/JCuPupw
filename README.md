@@ -9,13 +9,15 @@
 - **主题切换** — 支持 `light` / `dark` / `auto`（跟随系统）
 - **多格式产物** — UMD / ESM / CommonJS
 - **Promise 化 API** — 所有操作均为异步，基于 `Promise`
-- **触发器模式** — `data-*` 属性自动绑定，零 JS 代码
+- **触发器模式** — `data-*` 属性 + 事件委托自动绑定，支持动态元素与多实例指定
+- **安全渲染** — 按钮文本、`placeholder`、`defaultValue` 等按纯文本/属性处理，避免 XSS
 - **快捷方法** — 内置 `alert` / `confirm` / `prompt` / `toast`
 - **流畅拖拽** — GPU 加速的弹窗拖拽，支持多次拖拽累积偏移
 - **尺寸控制** — 预设 `sm` / `md` / `lg` / `auto` 或自定义宽度
 - **多弹窗管理** — 默认堆叠显示，支持队列模式依次展示
 - **行为钩子** — `beforeClose` 拦截、`autoClose` 自动关闭等
-- **无障碍支持** — `role="dialog"`、焦点圈禁（Focus Trap）与关闭后焦点还原、Toast `aria-live`
+- **无障碍支持** — 基于原生 `<dialog>`：焦点圈禁、页面 `inert`、Esc 关闭与焦点还原均由浏览器提供
+- **原生能力优先** — CSS `:has()` 滚动锁、CSS `translate` 拖拽、原生 `<form>` 回车提交，减少 JS 逻辑
 - **移动端适配** — 响应式设计，触摸友好
 - **原生弹窗接管** — 一键替换 `window.alert`/`confirm`/`prompt`
 
@@ -85,18 +87,25 @@ const modal = new JCuPupw();
 
 ### 触发器模式（零 JS 代码）
 
-给元素添加 `.jc-modal-trigger` 类和 `data-modal-*` 属性即可自动绑定：
+给元素添加 `.jc-modal-trigger` 类和 `data-modal-*` 属性即可自动绑定。触发器基于 `document` 事件委托实现，
+动态插入的元素同样生效：
 
 ```html
 <button class="jc-modal-trigger"
+        data-modal-target="myModal"
         data-modal-title="确认删除"
         data-modal-content="删除后数据将不可恢复"
         data-modal-size="sm"
+        data-modal-theme="dark"
         data-modal-draggable="true"
         data-modal-buttons='[{"text":"取消","type":"default"},{"text":"删除","type":"danger"}]'>
     删除
 </button>
 ```
+
+- `data-modal-target`：指定由哪个实例打开（值需与构造函数的 `id` 一致）。省略时使用全局单例。
+  若指定的 id 尚无活跃实例，会自动创建一个。
+- `data-modal-buttons`：JSON 数组，字段与 `buttons` 配置相同。
 
 ## API 参考
 
@@ -108,13 +117,15 @@ new JCuPupw(options?)
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `id` | `string` | `'jcModal'` | 弹窗 DOM 节点的 ID（多实例时需唯一） |
+| `id` | `string` | 自动生成（`jcModal-<时间戳>-<随机串>`） | 弹窗 DOM 节点的 ID。默认自动保证唯一；需要通过 `data-modal-target` 指定实例时请显式传入固定 id |
+
+> 多次调用 `open()` 是幂等的：已打开时只刷新标题/内容/按钮等配置，不会重复锁定页面滚动，也不会重复触发 `open` 事件。
 
 ---
 
 ### 实例方法
 
-#### `modal.open(config?)` → `Promise<void>`
+#### `modal.open(config?)` → `Promise<boolean>`
 
 打开弹窗，这是核心方法。
 
@@ -137,16 +148,21 @@ new JCuPupw(options?)
 | `onOpen` | `Function` | - | 打开完成回调 |
 | `onClose` | `Function` | - | 关闭完成回调 |
 
+> `content` 会作为 HTML 渲染（与 `innerHTML` 一致）。按钮文字、标题、`placeholder` 等其余字段按纯文本处理；
+> 若 `content` 来自用户输入，请自行转义或传入纯文本 DOM 节点（`textContent`）。
+
 **按钮对象结构：**
 
 ```typescript
 {
-    text: string,      // 按钮文字
-    type?: 'default' | 'primary' | 'danger',  // 样式类型
+    text: string,      // 按钮文字（始终按纯文本渲染，不会解析 HTML）
+    type?: 'default' | 'primary' | 'danger',  // 样式类型，其它值会被忽略
     action?: () => void,  // 点击回调
     close?: boolean      // 点击后是否自动关闭（默认 true）
 }
 ```
+
+> 需要阻止关闭（例如表单校验失败）时，把 `close` 设为 `false`，并在校验通过后自行调用 `close()`。
 
 ---
 
@@ -154,7 +170,7 @@ new JCuPupw(options?)
 
 | 方法 | 返回值 | 说明 |
 |------|--------|------|
-| `modal.alert(config)` | `Promise<void>` | 单按钮警告框 |
+| `modal.alert(config)` | `Promise<boolean>` | 单按钮警告框 |
 | `modal.confirm(config \| string)` | `Promise<boolean>` | 双按钮确认框，返回 `true`/`false`（支持字符串简写 `confirm('消息')`） |
 | `modal.prompt(config)` | `Promise<string \| null>` | 带输入框对话框，返回输入值或 `null` |
 | `modal.toast(config)` | `{ close, el }` | 非模态 Toast 通知 |
@@ -189,13 +205,15 @@ modal.toast({
 });
 ```
 
+> `validate` 返回错误信息时弹窗会保持打开并显示错误，只有校验通过才会 `resolve` 并关闭。
+
 ---
 
 #### 其他实例方法
 
 | 方法 | 说明 |
 |------|------|
-| `modal.close()` | 关闭当前弹窗（Promise） |
+| `modal.close()` | 关闭当前弹窗，返回 `Promise<boolean>`（未打开或关闭被拦截时为 `false`） |
 | `modal.setTitle(text)` | 动态设置标题（链式调用） |
 | `modal.setContent(html)` | 动态设置内容 |
 | `modal.addButton(text, action?, type?)` | 动态添加按钮 |
@@ -221,6 +239,7 @@ modal.toast({
 | `JCuPupw.closeAll()` | 关闭所有已打开的弹窗 |
 | `JCuPupw.intercept()` | 接管 `window.alert`/`confirm`/`prompt` |
 | `JCuPupw.restore()` | 恢复原生方法 |
+| `JCuPupw.clearToasts()` | 移除所有 Toast 及容器 |
 
 ---
 
@@ -241,7 +260,9 @@ const val = await window.prompt('输入：');  // → Promise<string|null>
 JCuPupw.restore();
 ```
 
-> **重要提示**：原生 `confirm`/`prompt` 是**同步阻塞**的，而 JCuPupw 是异步的。接管后 `window.confirm()` 和 `window.prompt()` 将返回 **Promise**，调用方必须使用 `await` 或 `.then()`。
+> **重要提示**：原生 `confirm`/`prompt` 是**同步阻塞**的，而 JCuPupw 是异步的。接管后 `window.confirm()` 和 `window.prompt()` 将返回 **Promise**，调用方必须使用 `await` 或 `.then()`。**接管后原有同步写法（如 `if (confirm('...'))`，Promise 恒为真值）不再兼容**，首次接管会在控制台给出警告。
+
+`restore()` 会把接管前保存的原生 `alert`/`confirm`/`prompt` 引用原样还原，不会删除 `window` 上的属性。
 
 **降级保护**：如果 JCuPupw 内部发生错误，不会调用原生方法（避免浏览器阻塞），而是返回安全默认值（`alert` → `undefined`，`confirm` → `false`，`prompt` → `null`）。
 
@@ -277,7 +298,7 @@ modal.open({
 ### 多弹窗堆叠
 
 ```javascript
-// 同时打开多个弹窗（z-index 自动递增）
+// 同时打开多个弹窗（原生 dialog 顶层堆叠，后打开的显示在上层）
 modal1.open({ title: '弹窗 1', content: '第一层' });
 modal2.open({ title: '弹窗 2', content: '第二层' });
 modal3.open({ title: '弹窗 3', content: '第三层' });
@@ -324,6 +345,43 @@ npm run build
 
 每个产物顶部均包含版权声明、仓库地址、作者信息、许可证类型（AGPL-3.0）和唯一构建 UUID。
 
+## 浏览器兼容
+
+本版本优先使用浏览器原生能力，依赖以下特性：
+
+| 能力 | 用途 | 最低版本 |
+|------|------|----------|
+| `<dialog>` + `showModal()` | 模态、焦点圈禁、页面 `inert`、Esc / `cancel` | Chromium 37 / Firefox 98 / Safari 15.4 |
+| CSS `:has()` | 滚动锁（不修改 `body` 内联样式） | Chromium 105 / Firefox 121 / Safari 15.4 |
+| CSS `translate` 独立属性 | 拖拽位移，与动画 `transform` 互不覆盖 | Chromium 104 / Firefox 72 / Safari 14.1 |
+
+综合最低版本：**Chromium 105+ / Firefox 121+ / Safari 15.4+**。
+
+## 测试
+
+构建后直接用浏览器打开 [`tests/regression.html`](./tests/regression.html)（需先执行 `npm run build`），
+页面会依次执行 77 项断言并输出 `SUMMARY: 77 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
+
+- 默认按钮只关闭一次 / `close` 防重入
+- `prompt` `validate` 失败保持打开（点击确定与原生表单回车两条路径）
+- 按钮文本、`placeholder`、`defaultValue` 的 XSS 转义
+- 触发器事件委托、动态元素、`data-modal-target`
+- 默认 `id` 唯一
+- `intercept` / `restore` 原生引用
+- `open` / `close` 幂等
+- 滚动锁使用 CSS `:has()`，不影响 `body` 内联样式
+- `destroy` 清理与 Promise 兜底
+- 拖拽与打开动画互不覆盖（独立 `translate` 属性）
+
+同时覆盖原生 `<dialog>` 的模态状态、焦点圈禁与焦点还原、顶层堆叠、`cancel` 事件、遮罩关闭以及队列模式。
+
+也可用无头浏览器执行：
+
+```bash
+msedge --headless=new --disable-gpu --virtual-time-budget=90000 \
+  --dump-dom "file:///<项目绝对路径>/tests/regression.html"
+```
+
 ## 项目结构
 
 ```
@@ -334,6 +392,8 @@ JCuPupw/
 ├── dist/               # 构建产物（UMD/ESM/CJS）
 ├── examples/
 │   └── index.html      # 演示页面
+├── tests/
+│   └── regression.html # 回归测试页
 ├── scripts/
 │   └── obfuscate.mjs   # 混淆脚本
 ├── rollup.config.js    # Rollup 配置

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>JCuPupw regression tests</title>
+<style>#host button { margin: 4px; }</style>
+</head>
+<body>
+<div id="host"></div>
+<pre id="results">RUNNING</pre>
+<script src="../dist/jcupupw.umd.js"></script>
+<script>
+const results = [];
+const errors = [];
+window.addEventListener('error', (e) => errors.push(`window.onerror: ${e.message}`));
+window.addEventListener('unhandledrejection', (e) => errors.push(`unhandledrejection: ${e.reason}`));
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const check = (name, cond, detail) => results.push(`${cond ? 'PASS' : 'FAIL'} ${name}${detail ? ' :: ' + detail : ''}`);
+const click = (el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+const pointer = (el, type, x, y, extra = {}) => el.dispatchEvent(new PointerEvent(type, {
+    bubbles: true, cancelable: true, clientX: x, clientY: y,
+    pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: type === 'pointerup' ? 0 : 1, ...extra
+}));
+const q = (sel) => document.querySelector(sel);
+const btnLabel = (el) => el.textContent;
+const resetBody = () => { document.body.style.overflow = ''; document.body.style.paddingRight = ''; };
+const pageLocked = () => getComputedStyle(document.documentElement).overflow === 'hidden';
+
+async function flush(ms = 40) { await sleep(ms); }
+
+(async () => {
+    /* ===== 问题 1：默认按钮只关闭一次 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't1' });
+        let onCloseCount = 0, closeEventCount = 0, openEventCount = 0;
+        m.on('close', () => closeEventCount++);
+        m.on('open', () => openEventCount++);
+        await m.open({ title: 't1', content: 'c', onClose: () => onCloseCount++ });
+        check('issue1: native dialog enters modal (top layer) state', m.modal.matches(':modal'));
+        check('issue1: opening animation comes from CSS', getComputedStyle(m.container).animationName === 'jc-fadeInUp', getComputedStyle(m.container).animationName);
+        const rows = m.modalActions.children.length;
+        click(m.modalActions.querySelector('.jc-modal__button'));
+        await sleep(900);
+        check('issue1: default button renders one button', rows === 1, `rows=${rows}`);
+        check('issue1: onClose called exactly once', onCloseCount === 1, `onClose=${onCloseCount}`);
+        check('issue1: close event fired exactly once', closeEventCount === 1, `close=${closeEventCount}`);
+        check('issue1: open event fired exactly once', openEventCount === 1, `open=${openEventCount}`);
+        check('issue1: modal closed', !m.isOpen());
+        check('issue1: page scroll unlocked', !pageLocked(), getComputedStyle(document.documentElement).overflow);
+        m.destroy();
+    })();
+
+    /* ===== 问题 2：prompt validate 失败不关闭 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't2' });
+        let settled = null;
+        const promise = m.prompt({
+            title: 'p', content: '请输入 6 位数字', defaultValue: '',
+            validate: (v) => (/^\d{6}$/.test(v) ? null : '必须是 6 位数字')
+        }).then((v) => { settled = v; return v; });
+        await flush();
+        const input = q('#t2 .jc-modal__input');
+        input.value = '12';
+        click(m.modalActions.querySelector('.jc-modal__button--primary'));
+        await flush(100);
+        const err = q('#t2 .jc-modal__input-error');
+        check('issue2: invalid input keeps modal open', m.isOpen(), `isOpen=${m.isOpen()}`);
+        check('issue2: invalid input does not resolve', settled === null, `settled=${settled}`);
+        check('issue2: validation error shown', err && err.hidden === false && err.textContent === '必须是 6 位数字', err && err.textContent);
+        check('issue2: prompt uses native form', !!q('#t2 .jc-modal__form') && q('#t2 .jc-modal__form').contains(input));
+        input.value = '123';
+        q('#t2 .jc-modal__form').requestSubmit();
+        await flush(80);
+        check('issue2: form submit (Enter path) also validates', m.isOpen() && settled === null, `isOpen=${m.isOpen()}`);
+        input.value = '123456';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        click(m.modalActions.querySelector('.jc-modal__button--primary'));
+        const value = await promise;
+        check('issue2: valid input resolves value', value === '123456', `value=${value}`);
+        await sleep(900);
+        check('issue2: closes after successful submit', !m.isOpen());
+        m.destroy();
+    })();
+
+    /* ===== 问题 3：innerHTML 注入 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't3' });
+        const evilText = '<img src=x onerror="window.__xss=1">';
+        await m.open({
+            title: '注入测试',
+            content: 'body',
+            buttons: [
+                { text: evilText, type: 'primary' },
+                { text: 'bad-type', type: '"><script>window.__xss2=1<\/script>' }
+            ]
+        });
+        await flush(60);
+        check('issue3: button text rendered as plain text', m.modalActions.children[0].textContent === evilText, btnLabel(m.modalActions.children[0]));
+        check('issue3: no injected img in buttons', m.modalActions.querySelector('img') === null);
+        check('issue3: unknown button type does not inject class', !/script/i.test(m.modalActions.children[1].className), m.modalActions.children[1].className);
+        check('issue3: no onerror executed', window.__xss === undefined && window.__xss2 === undefined);
+
+        const m2 = new JCuPupw({ id: 't3b' });
+        const evilPlaceholder = '"><img src=x onerror="window.__xss3=1">';
+        const evilValue = '"><img src=x onerror="window.__xss4=1">';
+        m2.prompt({ content: 'x', placeholder: evilPlaceholder, defaultValue: evilValue });
+        await flush(80);
+        const input = q('#t3b .jc-modal__input');
+        check('issue3: prompt placeholder escaped as attribute', input.getAttribute('placeholder') === evilPlaceholder, input.getAttribute('placeholder'));
+        check('issue3: prompt defaultValue kept as value', input.value === evilValue, input.value);
+        check('issue3: prompt has no injected img', m2.modalContent.querySelector('img') === null);
+        await sleep(60);
+        check('issue3: prompt onerror never ran', window.__xss3 === undefined && window.__xss4 === undefined);
+        m.destroy(); m2.destroy();
+    })();
+
+    /* ===== 问题 4：触发器事件委托 / 动态元素 / data-modal-target ===== */
+    await (async () => {
+        const host = document.getElementById('host');
+        host.innerHTML = '<button class="jc-modal-trigger" data-modal-content="动态内容">动态</button>';
+        click(host.querySelector('button'));
+        await flush();
+        const single = JCuPupw.instance();
+        check('issue4: dynamically added trigger works', single.isOpen() && single.modalContent.textContent === '动态内容');
+        await single.close(); await sleep(800);
+
+        const a = new JCuPupw({ id: 'trigA' });
+        const b = new JCuPupw({ id: 'trigB' });
+        host.innerHTML = '<button class="jc-modal-trigger" data-modal-target="trigB" data-modal-content="B">B</button>';
+        click(host.querySelector('button'));
+        await flush();
+        check('issue4: data-modal-target opens the matching instance', b.isOpen() && !a.isOpen());
+        check('issue4: targeted instance got content', b.modalContent.textContent === 'B');
+        await b.close(); await sleep(800);
+        a.destroy(); b.destroy();
+
+        const gone = new JCuPupw({ id: 'trigGone' });
+        gone.destroy();
+        host.innerHTML = '<button class="jc-modal-trigger" data-modal-target="trigGone" data-modal-content="recreated">G</button>';
+        click(host.querySelector('button'));
+        await flush();
+        const recreated = JCuPupw._findInstance('trigGone');
+        check('issue4: destroyed target is recreated instead of erroring', !!recreated && recreated.isOpen() && recreated.modalContent.textContent === 'recreated');
+        recreated && recreated.destroy();
+
+        host.innerHTML = '';
+    })();
+
+    /* ===== 问题 5：默认 id 唯一 ===== */
+    await (async () => {
+        const a = new JCuPupw();
+        const b = new JCuPupw();
+        check('issue5: default ids are unique', a.modalId !== b.modalId, `${a.modalId} / ${b.modalId}`);
+        check('issue5: both DOM nodes coexist', document.body.contains(a.modal) && document.body.contains(b.modal));
+        await a.open({ content: 'A' });
+        check('issue5: first instance still works after second built', a.isOpen() && a.modal.isConnected);
+        await a.close(); await sleep(800);
+        a.destroy(); b.destroy();
+    })();
+
+    /* ===== 问题 6：intercept 恢复原生引用 ===== */
+    await (async () => {
+        const nativeConfirm = window.confirm;
+        JCuPupw.intercept();
+        const ret = window.confirm('intercept test');
+        check('issue6: intercepted confirm returns Promise', ret instanceof Promise);
+        await flush(80);
+        click(JCuPupw.instance().modalActions.querySelector('.jc-modal__button--default'));
+        const answer = await ret;
+        check('issue6: intercepted confirm resolves boolean', answer === false, `answer=${answer}`);
+        await sleep(800);
+        JCuPupw.restore();
+        check('issue6: restore puts exact native reference back', window.confirm === nativeConfirm);
+        check('issue6: restore clears intercepted state', JCuPupw._intercepted === false);
+        JCuPupw.closeAll();
+    })();
+
+    /* ===== 问题 7：open/close 防重入 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't7' });
+        let opens = 0, closes = 0;
+        m.on('open', () => opens++);
+        m.on('close', () => closes++);
+        await m.open({ content: 'A' });
+        await m.open({ content: 'B' });
+        check('issue7: repeated open keeps page scroll locked', pageLocked(), getComputedStyle(document.documentElement).overflow);
+        check('issue7: repeated open refreshes content', m.modalContent.textContent === 'B');
+        check('issue7: repeated open does not duplicate open event', opens === 1, `opens=${opens}`);
+        const p1 = m.close();
+        const p2 = m.close();
+        check('issue7: repeated close returns same promise', p1 === p2);
+        await p1;
+        await sleep(900);
+        check('issue7: close callback/events fire once', closes === 1, `closes=${closes}`);
+        check('issue7: page scroll unlocked after close', !pageLocked(), getComputedStyle(document.documentElement).overflow);
+        m.destroy();
+    })();
+
+    /* ===== 问题 8：CSS 滚动锁不影响 body 内联样式 ===== */
+    await (async () => {
+        document.body.style.overflow = 'auto';
+        document.body.style.paddingRight = '20px';
+        const m = new JCuPupw({ id: 't8' });
+        await m.open({ content: 'x' });
+        check('issue8: CSS scroll lock active while open', pageLocked(), getComputedStyle(document.documentElement).overflow);
+        check('issue8: body inline styles untouched while open', document.body.style.overflow === 'auto' && document.body.style.paddingRight === '20px', `"${document.body.style.overflow}" / "${document.body.style.paddingRight}"`);
+        await m.close();
+        await sleep(900);
+        check('issue8: scroll lock removed after close', !pageLocked(), getComputedStyle(document.documentElement).overflow);
+        check('issue8: body inline styles still intact', document.body.style.overflow === 'auto' && document.body.style.paddingRight === '20px', `"${document.body.style.overflow}" / "${document.body.style.paddingRight}"`);
+        m.destroy();
+        resetBody();
+    })();
+
+    /* ===== 问题 9：destroy 清理 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't9' });
+        m.open({ title: '拖拽', content: 'x', draggable: true });
+        await flush(60);
+        const title = m.modalTitle;
+        const rect = m.container.getBoundingClientRect();
+        pointer(title, 'pointerdown', rect.left + 20, rect.top + 10);
+        pointer(document, 'pointermove', rect.left + 100, rect.top + 80);
+        await flush(20);
+        check('issue9: drag active before destroy', document.body.style.userSelect === 'none' && !!m._dragCleanup);
+        m.destroy();
+        check('issue9: modal DOM removed', !document.getElementById('t9'));
+        check('issue9: drag listeners cleared', m._dragCleanup === null);
+        check('issue9: userSelect restored', document.body.style.userSelect === '');
+        check('issue9: page scroll unlocked', !pageLocked(), getComputedStyle(document.documentElement).overflow);
+        check('issue9: instance unregistered', !JCuPupw._instances.has(m));
+
+        const m2 = new JCuPupw({ id: 't9b' });
+        const pending = m2.confirm('sure?');
+        await flush(80);
+        m2.destroy();
+        const answer = await pending;
+        check('issue9: pending confirm settles on destroy', answer === false, `answer=${answer}`);
+
+        // destroy 后再次 open 不应抛错
+        let threw = false;
+        try { await m2.open({ content: 'x' }); } catch (e) { threw = true; }
+        check('issue9: open after destroy is safely ignored', threw === false);
+    })();
+
+    /* ===== 问题 10：拖拽与打开动画不再冲突 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't10' });
+        await m.open({ title: '拖拽测试', content: '拖动标题', draggable: true });
+        await sleep(800); // 等打开动画（0.5s）结束
+        const before = m.container.getBoundingClientRect();
+        const title = m.modalTitle;
+        pointer(title, 'pointerdown', before.left + 20, before.top + 10);
+        pointer(document, 'pointermove', before.left + 120, before.top + 70);
+        await flush(30);
+        const after = m.container.getBoundingClientRect();
+        const dx = Math.round(after.left - before.left);
+        const dy = Math.round(after.top - before.top);
+        check('issue10: drag works after opening animation', Math.abs(dx - 100) <= 2 && Math.abs(dy - 60) <= 2, `dx=${dx} dy=${dy}`);
+        check('issue10: independent CSS translate applied', m.container.style.translate === '100px 60px', `translate=${m.container.style.translate}`);
+        check('issue10: dragging class set', m.container.classList.contains('jc-modal__container--dragging'));
+        pointer(document, 'pointerup', before.left + 120, before.top + 70);
+        await flush(30);
+        check('issue10: dragging class cleared on pointerup', !m.container.classList.contains('jc-modal__container--dragging'));
+        const finalRect = m.container.getBoundingClientRect();
+        check('issue10: position stable after pointerup', Math.abs(Math.round(finalRect.left - before.left) - 100) <= 2);
+        await m.close();
+        await sleep(900);
+        check('issue10: drag styles reset after close', m.container.style.translate === '' && m._dragOffset.x === 0, `translate="${m.container.style.translate}"`);
+        m.destroy();
+    })();
+
+    /* ===== 附加：原生 dialog / cancel / beforeClose / 焦点 / 遮罩 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't11' });
+        check('extra: uses native <dialog> element', m.modal instanceof HTMLDialogElement);
+        check('extra: dialog is closed before open', m.modal.open === false);
+        const pending = m.confirm('esc test');
+        await flush(80);
+        check('extra: dialog is open before cancel', m.modal.open === true);
+        // 浏览器在按 Esc 时会对顶层 modal dialog 派发 cancel 事件
+        const cancelHandled = m.modal.dispatchEvent(new Event('cancel', { cancelable: true })) === false;
+        check('extra: native cancel event is intercepted', cancelHandled);
+        const answer = await pending;
+        check('extra: ESC closes confirm and resolves false', answer === false && !m.isOpen(), `answer=${answer}`);
+        await sleep(900);
+        m.destroy();
+
+        const mEsc = new JCuPupw({ id: 't11b' });
+        await mEsc.open({ content: 'x', closeOnEsc: false });
+        mEsc.modal.dispatchEvent(new Event('cancel', { cancelable: true }));
+        await flush(80);
+        check('extra: closeOnEsc=false keeps dialog open', mEsc.isOpen());
+        await mEsc.close();
+        await sleep(900);
+        mEsc.destroy();
+
+        let blocked = false;
+        const m2 = new JCuPupw({ id: 't12' });
+        await m2.open({ content: 'x', beforeClose: () => false });
+        const closed = await m2.close();
+        check('extra: beforeClose=false prevents closing', m2.isOpen() && closed === false);
+        blocked = m2.isOpen();
+        await m2.close();
+        await sleep(900);
+        m2.destroy();
+        check('extra: beforeClose block was effective', blocked);
+
+        // 原生 dialog 的焦点圈禁与关闭后焦点还原
+        const focusHost = document.getElementById('host');
+        const opener = document.createElement('button');
+        opener.textContent = 'focus opener';
+        focusHost.appendChild(opener);
+        opener.focus();
+        const mFocus = new JCuPupw({ id: 't14' });
+        await mFocus.open({ content: 'focus' });
+        check('extra: focus moved inside dialog', mFocus.modal.contains(document.activeElement), document.activeElement?.className);
+        await mFocus.close();
+        await sleep(900);
+        check('extra: focus restored to opener by native dialog', document.activeElement === opener, document.activeElement?.tagName);
+        mFocus.destroy();
+        opener.remove();
+
+        // 遮罩点击 / closeOnOverlay
+        const mOverlay = new JCuPupw({ id: 't15' });
+        await mOverlay.open({ content: 'x', closeOnOverlay: false });
+        click(mOverlay.overlay);
+        await flush(80);
+        check('extra: closeOnOverlay=false ignores overlay click', mOverlay.isOpen());
+        await mOverlay.open({ content: 'x', closeOnOverlay: true });
+        click(mOverlay.overlay);
+        await sleep(900);
+        check('extra: overlay click closes dialog', !mOverlay.isOpen());
+        mOverlay.destroy();
+    })();
+
+    /* ===== 附加：队列模式 / 多弹窗堆叠（原生 top layer） ===== */
+    await (async () => {
+        const q1 = new JCuPupw({ id: 'q1' });
+        const q2 = new JCuPupw({ id: 'q2' });
+        await q1.open({ content: 'first', queue: true });
+        const queuedPromise = q2.open({ content: 'second', queue: true });
+        await flush(80);
+        check('extra: queued dialog waits for current', q1.isOpen() && !q2.isOpen());
+        await q1.close();
+        await sleep(900);
+        await flush(120);
+        check('extra: queued dialog opens after previous closes', q2.isOpen());
+        await queuedPromise;
+        await q2.close();
+        await sleep(900);
+        q1.destroy(); q2.destroy();
+
+        const s1 = new JCuPupw({ id: 's1' });
+        const s2 = new JCuPupw({ id: 's2' });
+        await s1.open({ content: 'stack 1' });
+        await s2.open({ content: 'stack 2' });
+        check('extra: multiple dialogs are all modal (top layer)', s1.modal.matches(':modal') && s2.modal.matches(':modal'));
+        s2.modal.dispatchEvent(new Event('cancel', { cancelable: true }));
+        await sleep(900);
+        check('extra: cancel closes only the topmost dialog', !s2.isOpen() && s1.isOpen());
+        await s1.close();
+        await sleep(900);
+        s1.destroy(); s2.destroy();
+    })();
+
+    /* ===== 附加：打开动画进行中拖拽 / Toast 清理 ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't13' });
+        m.open({ title: '动画中拖拽', content: 'x', draggable: true });
+        await sleep(100); // 打开动画（0.5s）尚未结束
+        const before = m.container.getBoundingClientRect();
+        pointer(m.modalTitle, 'pointerdown', before.left + 20, before.top + 10);
+        pointer(document, 'pointermove', before.left + 70, before.top + 40);
+        await flush(30);
+        const after = m.container.getBoundingClientRect();
+        const dx = Math.round(after.left - before.left);
+        check('extra: drag works during opening animation', Math.abs(dx - 50) <= 2, `dx=${dx}`);
+        pointer(document, 'pointerup', after.left + 20, after.top + 10);
+        m.destroy();
+
+        JCuPupw.toast({ content: 'toast', duration: 0 });
+        check('extra: toast container created', !!document.getElementById('jcToastContainer'));
+        JCuPupw.clearToasts();
+        check('extra: clearToasts removes container', !document.getElementById('jcToastContainer'));
+    })();
+
+    /* ===== 汇总 ===== */
+    const failed = results.filter(r => r.startsWith('FAIL'));
+    results.push('');
+    results.push(`SUMMARY: ${results.filter(r => r.startsWith('PASS')).length} passed, ${failed.length} failed, ${errors.length} js errors`);
+    if (errors.length) results.push(...errors.map(e => 'JSERROR ' + e));
+    document.getElementById('results').textContent = results.join('\n');
+})().catch((e) => {
+    document.getElementById('results').textContent = 'HARNESS ERROR: ' + (e && e.stack || e) + '\n' + results.join('\n');
+});
+</script>
+</body>
+</html>
