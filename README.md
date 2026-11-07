@@ -10,6 +10,7 @@
 - **多格式产物** — UMD / ESM / CommonJS
 - **Promise 化 API** — 所有操作均为异步，基于 `Promise`
 - **触发器模式** — `data-*` 属性 + 事件委托自动绑定，支持动态元素与多实例指定
+- **锚定定位** — 弹窗可跟随触发按钮弹出，`auto` 自动翻转并保持在视口内
 - **安全渲染** — 按钮文本、`placeholder`、`defaultValue` 等按纯文本/属性处理，避免 XSS
 - **快捷方法** — 内置 `alert` / `confirm` / `prompt` / `toast`
 - **流畅拖拽** — GPU 加速的弹窗拖拽，支持多次拖拽累积偏移
@@ -98,6 +99,8 @@ const modal = new JCuPupw();
         data-modal-size="sm"
         data-modal-theme="dark"
         data-modal-draggable="true"
+        data-modal-anchor="true"
+        data-modal-placement="auto"
         data-modal-buttons='[{"text":"取消","type":"default"},{"text":"删除","type":"danger"}]'>
     删除
 </button>
@@ -106,6 +109,8 @@ const modal = new JCuPupw();
 - `data-modal-target`：指定由哪个实例打开（值需与构造函数的 `id` 一致）。省略时使用全局单例。
   若指定的 id 尚无活跃实例，会自动创建一个。
 - `data-modal-buttons`：JSON 数组，字段与 `buttons` 配置相同。
+- `data-modal-anchor`：存在该属性时弹窗跟随触发元素定位。值为 `"true"` 表示使用按钮自身，也可填 CSS 选择器。
+- `data-modal-placement`：`auto` / `top` / `bottom` / `left` / `right`，默认 `auto`。
 
 ## API 参考
 
@@ -139,6 +144,8 @@ new JCuPupw(options?)
 | `size` | `'sm' \| 'md' \| 'lg' \| 'auto'` | - | 预设尺寸 |
 | `width` | `number \| string` | - | 自定义宽度（数字自动转 px） |
 | `draggable` | `boolean` | `false` | 是否可拖拽标题栏 |
+| `anchor` | `Element \| string` | - | 锚点元素或 CSS 选择器，弹窗跟随其位置弹出 |
+| `placement` | `'auto' \| 'top' \| 'bottom' \| 'left' \| 'right'` | `'auto'` | 相对锚点的方向；`auto` 优先下方，空间不足时自动翻转 |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | 主题类型 |
 | `closeOnOverlay` | `boolean` | `true` | 点击遮罩是否关闭 |
 | `closeOnEsc` | `boolean` | `true` | 按 ESC 是否关闭 |
@@ -279,6 +286,35 @@ modal.open({
 });
 ```
 
+### 锚定到触发按钮
+
+传入 `anchor` 即可让弹窗跟随按钮位置显示；`placement` 默认 `auto`，优先显示在按钮下方，
+空间不足时自动翻转到上方，左右方向同理，最终位置会被限制在视口内：
+
+```javascript
+button.addEventListener('click', (e) => {
+    modal.open({
+        title: '操作菜单',
+        content: '这段弹窗会出现在按钮旁边',
+        size: 'sm',
+        anchor: e.currentTarget,
+        placement: 'auto' // 可选：top / bottom / left / right
+    });
+});
+```
+
+触发器模式无需写 JS，加上 `data-modal-anchor="true"` 即可：
+
+```html
+<button class="jc-modal-trigger"
+        data-modal-anchor="true"
+        data-modal-placement="auto"
+        data-modal-content="跟随按钮定位">点击
+</button>
+```
+
+> 锚定模式下弹窗宽度按内容收缩（受 `size` / `width` 限制），窗口尺寸变化时会自动重新定位。
+
 ### 行为钩子
 
 ```javascript
@@ -360,7 +396,7 @@ npm run build
 ## 测试
 
 构建后直接用浏览器打开 [`tests/regression.html`](./tests/regression.html)（需先执行 `npm run build`），
-页面会依次执行 77 项断言并输出 `SUMMARY: 77 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
+页面会依次执行 87 项断言并输出 `SUMMARY: 87 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
 
 - 默认按钮只关闭一次 / `close` 防重入
 - `prompt` `validate` 失败保持打开（点击确定与原生表单回车两条路径）
@@ -372,6 +408,7 @@ npm run build
 - 滚动锁使用 CSS `:has()`，不影响 `body` 内联样式
 - `destroy` 清理与 Promise 兜底
 - 拖拽与打开动画互不覆盖（独立 `translate` 属性）
+- 锚定定位：跟随触发元素、方向翻转、水平居中与关闭后样式清理
 
 同时覆盖原生 `<dialog>` 的模态状态、焦点圈禁与焦点还原、顶层堆叠、`cancel` 事件、遮罩关闭以及队列模式。
 

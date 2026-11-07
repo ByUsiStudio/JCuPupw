@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 新增
+- **锚定定位**：`open()` 新增 `anchor` / `placement` 配置，弹窗跟随触发元素的位置弹出；`auto` 优先下方，空间不足时自动翻转，并收敛在视口内；窗口尺寸变化时自动重新定位
+- 触发器新增 `data-modal-anchor` / `data-modal-placement` 属性，无需编写 JS 即可让弹窗跟随按钮定位
+- `tests/regression.html` 新增锚定定位断言（共 87 项）
+
 ## [1.1.1] - 2026-11-07
 
 本版本集中修复 [Issue #1](https://github.com/ByUsiStudio/JCuPupw/issues/1) 中汇总的 10 类稳定性、安全性与生命周期问题。

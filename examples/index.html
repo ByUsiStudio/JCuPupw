@@ -182,6 +182,43 @@
         </div>
 
         <div class="demo-section">
+            <h2>跟随按钮位置弹出（锚定定位）</h2>
+            <p style="color:#666; margin-bottom:12px; font-size:14px;">
+                传入 <code>anchor</code>（或给触发器加 <code>data-modal-anchor="true"</code>）后，弹窗会出现在触发按钮旁边；
+                <code>placement</code> 默认 <code>auto</code>，下方空间不足时自动翻转到上方，并始终保持在视口内。
+            </p>
+            <div class="demo-grid">
+                <button class="demo-btn demo-btn--primary" id="btn-anchor-api">API 锚定（anchor）</button>
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-anchor="true"
+                        data-modal-title="自动定位"
+                        data-modal-content="placement: auto —— 优先显示在按钮下方，空间不足时自动翻转。"
+                        data-modal-size="sm"
+                        data-modal-buttons='[{"text":"知道了","type":"primary"}]'>
+                    触发器锚定（自动）
+                </button>
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-anchor="true"
+                        data-modal-placement="right"
+                        data-modal-title="右侧定位"
+                        data-modal-content="placement: right —— 固定显示在按钮右侧，靠近视口边缘时自动收敛。"
+                        data-modal-size="sm"
+                        data-modal-buttons='[{"text":"关闭","type":"default"}]'>
+                    右侧（right）
+                </button>
+                <button class="demo-btn jc-modal-trigger"
+                        data-modal-anchor="true"
+                        data-modal-placement="left"
+                        data-modal-title="左侧定位"
+                        data-modal-content="placement: left —— 固定显示在按钮左侧。"
+                        data-modal-size="sm"
+                        data-modal-buttons='[{"text":"关闭","type":"default"}]'>
+                    左侧（left）
+                </button>
+            </div>
+        </div>
+
+        <div class="demo-section">
             <h2>触发器模式</h2>
             <p style="color:#666; margin-bottom:12px; font-size:14px;">
                 给按钮添加 <code>.jc-modal-trigger</code> 类和 <code>data-modal-*</code> 属性即可自动绑定：
@@ -399,6 +436,17 @@
                 title: '亮色主题',
                 content: 'theme: light —— 强制亮色，不受系统设置影响。',
                 theme: 'light'
+            });
+        });
+
+        /* ===== 锚定定位 ===== */
+        $('btn-anchor-api').addEventListener('click', (e) => {
+            modal.open({
+                title: 'API 锚定',
+                content: 'anchor 传入按钮元素，弹窗会跟随它定位。',
+                size: 'sm',
+                anchor: e.currentTarget,
+                placement: 'auto'
             });
         });
 
