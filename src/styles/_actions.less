@@ -60,6 +60,9 @@
     position: absolute;
     top: 16px;
     right: 16px;
+    // 标题的错峰入场动画使用了 transform，会形成堆叠上下文；
+    // 标题在 DOM 中位于关闭按钮之后，若不提升层级会盖住按钮的点击区域
+    z-index: 2;
     width: 32px;
     height: 32px;
     border: none;

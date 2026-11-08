@@ -522,6 +522,21 @@ async function flush(ms = 40) { await sleep(ms); }
         theme?.remove();
     })();
 
+    /* ===== 附加：关闭按钮可点击性（标题动画堆叠上下文遮挡回归） ===== */
+    await (async () => {
+        const m = new JCuPupw({ id: 't18' });
+        await m.open({ title: '关闭按钮', content: '点击右上角关闭' });
+        await sleep(900); // 等错峰入场动画结束，标题的 transform 会形成堆叠上下文
+        const closeBtn = m.modal.querySelector('.jc-modal__close');
+        const rect = closeBtn.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        check('close-button: center of close button is not covered', hit === closeBtn, hit && (hit.className || hit.tagName));
+        click(hit || closeBtn);
+        await sleep(900);
+        check('close-button: clicking center closes the modal', !m.isOpen());
+        m.destroy();
+    })();
+
     /* ===== 汇总 ===== */
     const failed = results.filter(r => r.startsWith('FAIL'));
     results.push('');

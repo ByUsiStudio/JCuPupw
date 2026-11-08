@@ -4,6 +4,17 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.2] - 2026-11-08
+
+### 新增
+
+- TypeScript 类型声明：新增 `types/index.d.ts` 与 `types/index.d.cts`，覆盖构造函数、`open()` 的全部配置、按钮、快捷对话框、事件、静态方法以及 `toast` 的返回值；`package.json` 增加 `types` 和 `exports` 字段，ESM / CommonJS 消费端都能直接获得类型提示与补全。
+- README 增加 TypeScript 使用示例，并同步更新项目结构说明。
+
+### 修复
+
+- 弹窗右上角关闭按钮无法关闭：标题的错峰入场动画使用了 `transform`，会让标题形成堆叠上下文；标题在 DOM 中位于关闭按钮之后，因此盖住了关闭按钮的点击区域，点击 `×` 没有反应。为 `.jc-modal__close` 增加 `z-index: 2` 提升层级，并新增关闭按钮命中测试（回归测试增至 117 项）。
+
 ## [1.2.0] - 2026-11-07
 
 ### 新增

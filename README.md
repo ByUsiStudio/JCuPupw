@@ -9,6 +9,7 @@ JCuPupw 是一个轻量级浏览器弹窗库，基于原生 `<dialog>`，运行�
 - 支持 `light`、`dark`、`auto` 三种主题，`auto` 跟随系统
 - 提供 UMD、ESM、CommonJS 三种产物
 - 所有 API 基于 Promise
+- 内置 TypeScript 类型声明，ESM / CommonJS 均可直接获得类型提示
 - 触发器使用 `data-*` 属性和事件委托，动态插入的元素也能生效，可用 `data-modal-target` 指定实例
 - 弹窗可以跟随触发按钮定位，`auto` 模式下自动翻转并保持在视口内
 - 按钮文字、`placeholder`、`defaultValue` 等按纯文本或属性处理，避免 XSS
@@ -75,6 +76,56 @@ JCuPupw.toast({ content: '操作失败', type: 'error' });
 const JCuPupw = require('jcupupw');
 const modal = new JCuPupw();
 ```
+
+### TypeScript
+
+包内自带类型声明，无需额外安装 `@types/jcupupw`，ESM 与 CommonJS 都有各自的类型入口。
+
+```typescript
+import JCuPupw, {
+    type JCuPupwConfig,
+    type JCuPupwButton,
+    type JCuPupwPromptConfig,
+    type JCuPupwToastHandle
+} from 'jcupupw';
+
+const modal: JCuPupw = new JCuPupw({ id: 'myModal' });
+
+const buttons: JCuPupwButton[] = [
+    { text: '取消', type: 'default' },
+    { text: '确定', type: 'primary', action: () => console.log('确认') }
+];
+
+const config: JCuPupwConfig = {
+    title: '你好',
+    content: '这是 JCuPupw 的基础用法',
+    buttons
+};
+
+await modal.open(config);
+
+const confirmed: boolean = await JCuPupw.confirm('确定删除吗？');
+
+const promptConfig: JCuPupwPromptConfig = {
+    title: '请输入昵称',
+    placeholder: '请输入...',
+    validate: (value) => (value.trim() ? null : '昵称不能为空')
+};
+const name: string | null = await JCuPupw.prompt(promptConfig);
+
+const toast: JCuPupwToastHandle = JCuPupw.toast({ content: '保存成功', type: 'success' });
+toast.close();
+```
+
+CommonJS 项目同样可以拿到类型：
+
+```typescript
+import JCuPupw = require('jcupupw');
+
+const modal = new JCuPupw({ id: 'myModal' });
+```
+
+可用的类型名包括 `JCuPupwConfig`（`open()` 配置）、`JCuPupwResolvedConfig`、`JCuPupwOptions`、`JCuPupwButton`、`JCuPupwAlertConfig`、`JCuPupwConfirmConfig`、`JCuPupwPromptConfig`、`JCuPupwToastConfig`、`JCuPupwToastHandle`、`JCuPupwContent`、`JCuPupwConstructor`，以及 `JCuPupwTheme`、`JCuPupwSize`、`JCuPupwPlacement`、`JCuPupwEasing`、`JCuPupwButtonType`、`JCuPupwInputType`、`JCuPupwToastType`、`JCuPupwEventName`、`JCuPupwEventCallback` 等，均从包根导出。
 
 ### 浏览器（UMD）
 
@@ -425,7 +476,7 @@ JCuPupw 依赖以下浏览器特性：
 
 ## 测试
 
-先执行 `npm run build`，然后在浏览器中打开 [`tests/regression.html`](./tests/regression.html)。页面会执行 115 项断言，并输出 `SUMMARY: 115 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
+先执行 `npm run build`，然后在浏览器中打开 [`tests/regression.html`](./tests/regression.html)。页面会执行 117 项断言，并输出 `SUMMARY: 117 passed, 0 failed`。测试覆盖 Issue #1 中列出的全部 10 类问题：
 
 - 默认按钮只关闭一次 / `close` 防重入
 - `prompt` `validate` 失败保持打开（点击确定与原生表单回车两条路径）
@@ -442,6 +493,7 @@ JCuPupw 依赖以下浏览器特性：
 - 指定方向空间不足时的自动翻转（如 `left` 翻转到 `right`）
 - `linear` / `nonlinear` 动画时间曲线（非线性到位后有轻微放大的回弹）
 - `lolilota_css_start` 特殊参数的主题注入、模式类与按钮悬浮禁用
+- 关闭按钮命中：不能被标题的入场动画堆叠上下文遮挡
 
 测试还覆盖原生 `<dialog>` 的模态状态、焦点圈禁与焦点还原、顶层堆叠、`cancel` 事件、遮罩关闭和队列模式。
 
@@ -460,6 +512,9 @@ JCuPupw/
 │   ├── jcupupw.js      # 核心库源码（ESM）
 │   ├── styles/         # 弹窗样式（LESS 拆分，构建期编译为字符串内联）
 │   └── less/           # lolilota 整站主题（特殊参数启用时注入）
+├── types/
+│   ├── index.d.ts      # TypeScript 类型声明（ESM 入口）
+│   └── index.d.cts     # TypeScript 类型声明（CommonJS 入口）
 ├── dist/               # 构建产物（UMD/ESM/CJS）
 ├── examples/
 │   └── index.html      # 演示页面

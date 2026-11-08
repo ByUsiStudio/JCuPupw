@@ -1,9 +1,25 @@
 {
   "name": "jcupupw",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "A lightweight modal dialog library for browsers, supporting Node.js (CommonJS) and browser global usage.",
   "main": "dist/jcupupw.cjs",
   "module": "dist/jcupupw.esm.js",
+  "types": "types/index.d.cts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./types/index.d.ts",
+        "default": "./dist/jcupupw.esm.js"
+      },
+      "require": {
+        "types": "./types/index.d.cts",
+        "default": "./dist/jcupupw.cjs"
+      },
+      "default": "./dist/jcupupw.esm.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "build": "rollup -c && node scripts/obfuscate.mjs",
     "dev": "rollup -c -w"
